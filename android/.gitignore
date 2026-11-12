@@ -1,0 +1,14 @@
+.gradle/
+.gradle-user-home/
+*.log
+.kotlin/
+.idea/
+**/build/
+local.properties
+*.jks
+*.keystore
+captures/
+.font-sources/
+dependency-downloads/
+.compat-runtime/
+__pycache__/

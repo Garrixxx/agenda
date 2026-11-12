@@ -1,0 +1,10 @@
+
+com.agenda.data.local.BackupPersistenceTest:....................
+com.agenda.data.local.DeletionPersistenceTest:..........
+com.agenda.data.local.LocalPersistenceTest:...................
+
+Time: 12.337
+
+OK (49 tests)
+
+
