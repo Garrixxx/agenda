@@ -19,7 +19,7 @@ object Ink {
     val Primary = Color(0xFF3B4F62)
     val Teal = Color(0xFF00ADB5)
     val Control = Color(0xFF00767C)
-    val CardBorder = Color(0xFFC4D0D9)
+    val CardBorder = Color(0xFFE0E6EB)
     val Connection = Color(0xFF8798A5)
     val Divider = Color(0xFFCDD2D6)
     val Done = Color(0xFF376C60)

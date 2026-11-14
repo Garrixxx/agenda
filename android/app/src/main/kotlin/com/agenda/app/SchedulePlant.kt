@@ -6,26 +6,37 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.unit.dp
 import com.agenda.app.design.Ink
 
 /** Small botanical line drawing matching the supplied reference. Decorative only. */
 @Composable
 fun SchedulePlant() {
-    Canvas(Modifier.width(156.dp).height(120.dp).padding(bottom=16.dp)) {
-        val factor=size.width/156f
-        scale(factor,factor,pivot=Offset.Zero) {
-            val stroke=Stroke(1.5f)
+    Canvas(Modifier.width(156.dp).height(123.dp).padding(bottom=16.dp)) {
+        // Keep the reference's 156:123 coordinates intact at every density.
+        val factor=minOf(size.width/156f,size.height/123f)
+        withTransform({
+            translate((size.width-156f*factor)/2,(size.height-123f*factor)/2)
+            scale(factor,factor,Offset.Zero)
+        }) {
+            val stroke=Stroke(1.35f,cap=StrokeCap.Round,join=StrokeJoin.Round)
             fun curve(draw:Path.()->Unit) {drawPath(Path().apply(draw),Ink.Primary,style=stroke)}
-            curve {moveTo(16f,100f);cubicTo(58f,101f,106f,99f,139f,96f)}
-            curve {moveTo(57f,99f);cubicTo(62f,79f,73f,55f,83f,35f)}
-            curve {moveTo(63f,85f);cubicTo(52f,88f,47f,80f,42f,75f);cubicTo(53f,74f,61f,76f,63f,85f)}
-            curve {moveTo(71f,68f);cubicTo(60f,69f,54f,59f,53f,56f);cubicTo(63f,55f,69f,59f,71f,68f)}
-            curve {moveTo(75f,62f);cubicTo(88f,65f,96f,57f,101f,51f);cubicTo(89f,50f,80f,52f,75f,62f)}
-            curve {moveTo(82f,49f);cubicTo(76f,44f,78f,36f,83f,33f);cubicTo(88f,39f,88f,44f,82f,49f)}
-            drawCircle(Ink.Primary,8f,Offset(115f,46f),style=stroke)
+            curve {moveTo(17f,104f);cubicTo(59f,105f,103f,103f,138f,100f)}
+            // Every leaf closes at an actual point on this continuous stem.
+            curve {moveTo(58f,102f);cubicTo(67f,85f,76f,68f,82f,54f)}
+            curve {moveTo(64.3f,90f);cubicTo(54f,92f,47f,87f,43f,79f)
+                cubicTo(53f,77f,63f,81f,64.3f,90f);close()}
+            curve {moveTo(71.1f,76.6f);cubicTo(60f,76f,54f,69f,54f,61f)
+                cubicTo(64f,60f,71f,66f,71.1f,76.6f);close()}
+            curve {moveTo(75.2f,68.2f);cubicTo(84f,71f,95f,66f,101f,57f)
+                cubicTo(91f,55f,79f,58f,75.2f,68.2f);close()}
+            curve {moveTo(82f,54f);cubicTo(77f,50f,78f,44f,83f,39f)
+                cubicTo(87f,45f,88f,51f,82f,54f);close()}
+            drawCircle(Ink.Primary,8f,Offset(115f,51f),style=stroke)
         }
     }
 }

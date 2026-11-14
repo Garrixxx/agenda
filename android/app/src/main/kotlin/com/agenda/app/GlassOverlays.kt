@@ -149,11 +149,11 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                 GlassSurface(glass,Modifier.then(if(kind=="week") Modifier.widthIn(max=320.dp).fillMaxWidth(.90f) else Modifier.fillMaxWidth())
                     .heightIn(max=maxPanelHeight).semantics {paneTitle=title}) {
                     Column(Modifier.verticalScroll(rememberScrollState()).animateContentSize(spring(dampingRatio=.8f,stiffness=400f))
-                        .padding(if(creating) 8.dp else 0.dp)
-                        .then(if(creating) Modifier.clip(RoundedCornerShape(16.dp)).background(Ink.Surface.copy(alpha=.94f)) else Modifier)
-                        .padding(if(creating) 10.dp else 18.dp)) {
-                        Row(Modifier.fillMaxWidth().then(if(creating) Modifier.clip(RoundedCornerShape(11.dp))
-                            .background(Ink.Teal).padding(start=12.dp) else Modifier),verticalAlignment=Alignment.CenterVertically) {
+                        .padding(if(creating) 0.dp else 18.dp)) {
+                        // Tint the same blurred glass; never put an opaque form inside it.
+                        Row(Modifier.fillMaxWidth().then(if(creating) Modifier
+                            .background(Brush.verticalGradient(listOf(Ink.Teal.copy(alpha=.48f),Ink.Teal.copy(alpha=.28f))))
+                            .padding(start=18.dp,end=6.dp,top=8.dp,bottom=8.dp) else Modifier),verticalAlignment=Alignment.CenterVertically) {
                             AgendaText(title,title=!creating && material==null,size=if(creating) 18 else 17,
                                 color=if(creating) Ink.Text else if(material!=null) Ink.Muted else Ink.Primary,
                                 maxLines=2,modifier=Modifier.weight(1f))
@@ -162,6 +162,7 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                             }
                             MarkButton(Mark.CLOSE,"关闭",{requestClose()})
                         }
+                        Column(Modifier.padding(if(creating) 18.dp else 0.dp)) {
                         when {
                             kind=="backup" -> BackupPanel(repository,{scheduleSaving=it})
                             kind=="leisure" -> LeisurePanel(data,repository,onNavigate,{scheduleDirty=it},{scheduleSaving=it})
@@ -437,6 +438,7 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                                 TextButton({discard=false}) {AgendaText("继续编辑",size=13,color=Ink.Primary)}
                                 TextButton(onClose) {AgendaText("放弃编辑",size=13,color=Ink.Primary)}
                             }
+                        }
                         }
                     }
                 }

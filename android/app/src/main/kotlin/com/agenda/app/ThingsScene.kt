@@ -195,7 +195,7 @@ private fun RelationshipGraph(data:AgendaSnapshot,onTask:(String)->Unit,onInfo:(
                         .shadow(if(node.kind=="task" || node.kind=="file") 2.dp else 0.dp,
                             RoundedCornerShape(if(node.kind=="object") 24.dp else 10.dp),ambientColor=Ink.Text.copy(alpha=.08f),spotColor=Ink.Text.copy(alpha=.08f))
                         .clip(RoundedCornerShape(if(node.kind=="object") 24.dp else 10.dp))
-                        .background(when(node.kind) {"object"->Ink.ObjectFill; "branch"->Ink.ObjectFill.copy(alpha=.35f);else->Ink.Surface})
+                        .background(if(node.kind=="object") Ink.ObjectFill else Ink.Surface)
                         .then(if(node.kind=="task" || node.kind=="file" || node.kind=="note")
                             Modifier.border(1.dp,Ink.CardBorder,RoundedCornerShape(10.dp)) else Modifier)
                         .semantics {selected=node.id==selectedNode}
