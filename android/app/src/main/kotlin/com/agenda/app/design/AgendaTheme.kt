@@ -19,6 +19,8 @@ object Ink {
     val Primary = Color(0xFF3B4F62)
     val Teal = Color(0xFF00ADB5)
     val Control = Color(0xFF00767C)
+    val CardBorder = Color(0xFFC4D0D9)
+    val Connection = Color(0xFF8798A5)
     val Divider = Color(0xFFCDD2D6)
     val Done = Color(0xFF376C60)
     val ObjectFill = Color(0xFFDFE4E7)
@@ -42,9 +44,14 @@ fun AgendaText(text: String, modifier: Modifier = Modifier, title: Boolean = fal
     weight: FontWeight = FontWeight.Normal, decoration: TextDecoration? = null) {
     // Android has no CSS unicode-range: explicitly route Latin letters and digits in each run.
     val mixed = agendaAnnotated(text,title)
-    Text(mixed, modifier, color = color, fontSize = size.sp, lineHeight = (size * 1.5).sp,
+    Text(mixed, modifier, color = color, fontSize = readingSize(size).sp, lineHeight = (readingSize(size) * 1.5).sp,
         fontWeight = weight, maxLines = maxLines, overflow = TextOverflow.Ellipsis,
         style = TextStyle(fontFeatureSettings = "tnum", textDecoration=decoration))
+}
+
+private fun readingSize(size:Int):Int = when(size) {
+    11 -> 12; 12 -> 13; 13 -> 14; 14 -> 16; 18 -> 20; 19 -> 21; 20 -> 24
+    else -> size
 }
 
 fun agendaAnnotated(text:String, title:Boolean=false): AnnotatedString = buildAnnotatedString {

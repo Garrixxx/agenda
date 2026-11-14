@@ -134,7 +134,10 @@ fun ScheduleScene(data:AgendaSnapshot,repository:AgendaViewModel,today:LocalDate
                         modifier=Modifier.align(Alignment.Center).padding(top=80.dp,start=45.dp,end=45.dp)) {
                         Box(Modifier.fillMaxWidth()
                             .clickable {onInfo("appearance")},contentAlignment=Alignment.Center) {
-                            if(data.appearance.text.isNotBlank()) AgendaText(data.appearance.text,title=true,size=18,color=Ink.Primary,maxLines=2)
+                            Column(horizontalAlignment=Alignment.CenterHorizontally) {
+                                SchedulePlant()
+                                if(data.appearance.text.isNotBlank()) AgendaText(data.appearance.text,title=true,size=18,color=Ink.Primary)
+                            }
                         }
                     }
                 }

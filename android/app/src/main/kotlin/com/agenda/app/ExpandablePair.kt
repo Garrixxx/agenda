@@ -3,7 +3,10 @@ package com.agenda.app
 import android.os.SystemClock
 import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.border
+import androidx.compose.foundation.progressSemantics
 import androidx.compose.foundation.background
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,10 +34,12 @@ import kotlin.math.roundToInt
 fun ExpandablePair(ids:List<String>,expanded:String?,onSelect:(String)->Unit,
     label:(String)->String,baseHeight:Dp=148.dp,
     cardModifier:(String)->Modifier={Modifier},
+    progress:((String)->Float)?=null,
     header:@Composable (String)->Unit,body:@Composable (String,Boolean)->Unit) {
     val left=animateFloatAsState(if(expanded==ids[0]) 1f else 0f,AgendaMotion.container(),label="pair-left")
     val right=animateFloatAsState(if(ids.size>1 && expanded==ids[1]) 1f else 0f,AgendaMotion.container(),label="pair-right")
     BoxWithConstraints(Modifier.fillMaxWidth()) {
+    val fontScale=LocalDensity.current.fontScale.coerceAtLeast(1f)
     val baseWidth=with(LocalDensity.current) {((maxWidth-12.dp)/2).toPx()}
     val readingWidth=(baseWidth*1.28f).roundToInt()
     Layout(modifier=Modifier.fillMaxWidth(),content={
@@ -44,10 +49,11 @@ fun ExpandablePair(ids:List<String>,expanded:String?,onSelect:(String)->Unit,
             val neighbour=if(index==0) right else left
             val interactive by remember(own,expanded,id) {derivedStateOf {expanded==id && own.value>.96f}}
             Box(cardModifier(id).clip(RoundedCornerShape(12.dp)).background(Ink.Surface)
+                .border(1.dp,Ink.CardBorder,RoundedCornerShape(12.dp))
                 .clickable {onSelect(id)}.semantics {contentDescription=label(id)}
                 .onSizeChanged {if(BuildConfig.DEBUG) Log.d("AgendaBoardMotion","${SystemClock.elapsedRealtime()}|$id|${it.width}|${it.height}")}) {
                 Layout(content={
-                    Column(Modifier.padding(16.dp).graphicsLayer {alpha=(1f-neighbour.value*.9f).coerceIn(.12f,1f)}) {
+                    Column(Modifier.padding(start=16.dp,end=16.dp,top=16.dp,bottom=28.dp).graphicsLayer {alpha=(1f-neighbour.value*.9f).coerceIn(.12f,1f)}) {
                         // Compact titles must wrap inside the compact card too.
                         // Keep that reading width stable through the transition.
                         Box(Modifier.width(with(LocalDensity.current) {baseWidth.toDp()}-32.dp)) {
@@ -59,9 +65,17 @@ fun ExpandablePair(ids:List<String>,expanded:String?,onSelect:(String)->Unit,
                     }
                 }) {measurables,constraints->
                     val content=measurables.single().measure(Constraints.fixedWidth(readingWidth))
-                    val height=boardCardHeight(baseWidth,constraints.maxWidth.toFloat(),baseHeight.toPx(),
+                    val height=boardCardHeight(baseWidth,constraints.maxWidth.toFloat(),(baseHeight*fontScale).toPx(),
                         content.height.toFloat(),own.value,neighbour.value).roundToInt()
                     layout(constraints.maxWidth,height) {content.placeRelative(0,0)}
+                }
+                progress?.let {calculate->
+                    val fraction=calculate(id).coerceIn(0f,1f)
+                    Box(Modifier.align(Alignment.BottomCenter).padding(horizontal=16.dp,vertical=10.dp)
+                        .fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp)).background(Ink.Divider)
+                        .progressSemantics(fraction)) {
+                        Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().background(Ink.Teal))
+                    }
                 }
                 if(expanded!=id) Box(Modifier.matchParentSize().clickable {onSelect(id)})
             }

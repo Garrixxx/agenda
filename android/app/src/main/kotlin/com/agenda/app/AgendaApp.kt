@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -132,15 +133,18 @@ fun AgendaApp(repository: AgendaViewModel,onDatasetChanged:()->Unit={}) {
                     1 -> ActionScene(data, repository, today, {showOverlay("task:$it")},{showOverlay("leisure")},{showOverlay("create")},{page=0})
                     else -> ScheduleScene(data, repository, today, fullDays, {showOverlay(if(it=="appearance" || it.startsWith("schedule:") || it.startsWith("edit-schedule:")) it else "info:$it")})
                 } }
-                if(page==0) MarkButton(Mark.PLUS, "新建任务", {showOverlay("create")},
-                    modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp))
+                if(page==0) FloatingActionButton(onClick={showOverlay("create")},
+                    shape=CircleShape,containerColor=Ink.Primary,contentColor=Ink.Surface,
+                    elevation=FloatingActionButtonDefaults.elevation(defaultElevation=4.dp),
+                    modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp).size(56.dp)
+                        .semantics {contentDescription="新建任务"}) {AgendaIcon(Mark.PLUS,Ink.Surface)}
             }
             Row(Modifier.fillMaxWidth().height(64.dp), horizontalArrangement=Arrangement.SpaceEvenly, verticalAlignment=Alignment.CenterVertically) {
                 listOf(Mark.GRAPH to "事项", Mark.ACTION to "行动", Mark.CALENDAR to "日程").forEachIndexed { index, (mark,label) ->
                     Column(horizontalAlignment=Alignment.CenterHorizontally) {
                         MarkButton(mark, label, {page=index}, if(page==index) Ink.Primary else Ink.Muted,
                             Modifier.semantics { selected = page==index })
-                        Box(Modifier.size(3.dp).background(if(page==index) Ink.Primary else Color.Transparent))
+                        Box(Modifier.size(5.dp).background(if(page==index) Ink.Teal else Ink.Divider))
                     }
                 }
             }
@@ -158,7 +162,7 @@ fun AgendaApp(repository: AgendaViewModel,onDatasetChanged:()->Unit={}) {
 }
 
 @Composable
-fun TaskLine(task: Task, repository: AgendaViewModel, onOpen: (String)->Unit, date: Boolean = false, enabled:Boolean=true) {
+fun TaskLine(task: Task, repository: AgendaViewModel, onOpen: (String)->Unit, date: Boolean = false, enabled:Boolean=true,onAccent:Boolean=false) {
     Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) {
         Checkbox(task.completed, if(enabled) ({done:Boolean->repository.setCompleted(task.id,done)}) else null, modifier=Modifier.semantics {
             contentDescription = "${if(task.completed) "恢复未完成" else "完成"}：${task.name}"
@@ -166,7 +170,7 @@ fun TaskLine(task: Task, repository: AgendaViewModel, onOpen: (String)->Unit, da
         Column(Modifier.weight(1f).clickable(enabled=enabled) {onOpen(task.id)}.padding(vertical=10.dp)) {
             AgendaText(task.name, color=if(task.completed) Ink.Muted else Ink.Text)
             val due=task.due
-            if(date && due!=null) AgendaText("${due.monthValue} 月 ${due.dayOfMonth} 日截止", size=12, color=Ink.Muted)
+            if(date && due!=null) AgendaText("${due.monthValue} 月 ${due.dayOfMonth} 日截止", size=12, color=if(onAccent) Ink.Text else Ink.Muted)
         }
     }
 }
@@ -178,6 +182,18 @@ private fun ActionScene(data: AgendaSnapshot, repository: AgendaViewModel, today
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=20.dp).padding(top=26.dp,bottom=24.dp), verticalArrangement=Arrangement.spacedBy(14.dp)) {
         AgendaText("现在，适合做什么", title=true,size=20,color=Ink.Primary)
         Spacer(Modifier.height(4.dp))
+        val urgent = urgentTasks(data.tasks,today,limit=1).firstOrNull()
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Ink.Teal)
+            .animateContentSize().padding(16.dp)) {
+            AgendaText("尽快做",title=true,size=19,color=Ink.Text)
+            if(urgent==null) AgendaText("一周内暂无待完成任务，按自己的节奏来。",color=Ink.Text,
+                modifier=Modifier.padding(top=12.dp,bottom=8.dp))
+            else {
+                TaskLine(urgent,repository,onOpen,date=true,onAccent=true)
+                if(urgent.description.isNotBlank()) AgendaText(urgent.description,size=13,color=Ink.Text,maxLines=2,
+                    modifier=Modifier.padding(start=12.dp,bottom=8.dp).clickable {onOpen(urgent.id)})
+            }
+        }
         val labels = Effort.entries.map {it.label} + "休闲活动"
         labels.chunked(2).forEach {pair->
             ExpandablePair(pair,expanded,{expanded=if(expanded==it) null else it},
@@ -206,13 +222,7 @@ private fun ActionScene(data: AgendaSnapshot, repository: AgendaViewModel, today
                     }
                 })
         }
-        val urgent = urgentTasks(data.tasks,today)
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Ink.Surface).animateContentSize().padding(16.dp)) {
-            AgendaText("尽快做",title=true,size=19,color=Ink.Primary)
-            AgendaText("一周内 · 按截止日期",size=12,color=Ink.Muted,modifier=Modifier.padding(top=4.dp,bottom=8.dp))
-            if(urgent.isEmpty()) AgendaText("一周内暂无待完成任务",color=Ink.Muted,modifier=Modifier.padding(vertical=16.dp))
-            urgent.forEach { TaskLine(it,repository,onOpen,date=true) }
-        }
+
     }
 }
 

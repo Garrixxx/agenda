@@ -50,6 +50,7 @@ private fun GraphNode.nodeWidth()=when(kind) {"branch"->64f;"object"->124f;else-
 
 @Composable
 private fun RelationshipGraph(data:AgendaSnapshot,onTask:(String)->Unit,onInfo:(String)->Unit,focusObject:String?) {
+    var selectedNode by rememberSaveable {mutableStateOf<String?>(null)}
     var collapsed by rememberSaveable {mutableStateOf(emptySet<String>())}
     val rawNodes=remember(data) {
         buildList {
@@ -127,6 +128,7 @@ private fun RelationshipGraph(data:AgendaSnapshot,onTask:(String)->Unit,onInfo:(
             if(focusObject==null) {lastFocus=null;return@LaunchedEffect}
             if(lastFocus==focusObject) return@LaunchedEffect
             val node=allNodes.find {it.id==focusObject} ?: return@LaunchedEffect
+            selectedNode=focusObject
             lastFocus=focusObject
             collapsed=collapsed-node.id
             zoom=maxOf(zoom,.85f)
@@ -181,7 +183,9 @@ private fun RelationshipGraph(data:AgendaSnapshot,onTask:(String)->Unit,onInfo:(
                 Canvas(Modifier.matchParentSize()) {
                     nodes.forEach {n->
                         val parent=nodes.find {it.id==n.parent} ?: return@forEach
-                        drawLine(Ink.Divider,Offset(parent.x*density,parent.y*density),Offset(n.x*density,n.y*density),1.2f*density)
+                        val active=n.id==selectedNode || parent.id==selectedNode
+                        drawLine(if(active) Ink.Teal else Ink.Connection,Offset(parent.x*density,parent.y*density),
+                            Offset(n.x*density,n.y*density),(if(active) 2f else 1.5f)*density)
                     }
                 }
                 nodes.forEach {node->
@@ -193,8 +197,10 @@ private fun RelationshipGraph(data:AgendaSnapshot,onTask:(String)->Unit,onInfo:(
                         .clip(RoundedCornerShape(if(node.kind=="object") 24.dp else 10.dp))
                         .background(when(node.kind) {"object"->Ink.ObjectFill; "branch"->Ink.ObjectFill.copy(alpha=.35f);else->Ink.Surface})
                         .then(if(node.kind=="task" || node.kind=="file" || node.kind=="note")
-                            Modifier.border(1.dp,Ink.Divider.copy(alpha=.75f),RoundedCornerShape(10.dp)) else Modifier)
+                            Modifier.border(1.dp,Ink.CardBorder,RoundedCornerShape(10.dp)) else Modifier)
+                        .semantics {selected=node.id==selectedNode}
                         .clickable {
+                            selectedNode=node.id
                             when(node.kind) {
                                 "object" -> collapsed=if(node.id in collapsed) collapsed-node.id else collapsed+node.id
                                 "branch" -> when {

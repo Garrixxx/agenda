@@ -48,6 +48,11 @@ fun TaskBoard(data:AgendaSnapshot,repository:AgendaViewModel,onTask:(String)->Un
             val row=listOf(cards.find {it.column==0}?.cardId.orEmpty(),cards.find {it.column==1}?.cardId.orEmpty())
             ExpandablePair(row,expanded,{expanded=if(expanded==it) null else it},
                 label={id->"事项卡片："+(data.objects.find {it.id==id}?.name ?: data.tasks.find {it.id==id}?.name.orEmpty())},
+                progress={id->
+                    val tasks=if(data.objects.any {it.id==id}) data.tasks.filter {it.objectId==id}
+                        else data.tasks.filter {it.id==id}
+                    if(tasks.isEmpty()) 0f else tasks.count {it.completed}.toFloat()/tasks.size
+                },
                 cardModifier={id->Modifier.zIndex(if(dragged==id) 1f else 0f).graphicsLayer {
                     if(dragged==id) {translationX=delta.x;translationY=delta.y;scaleX=1.025f;scaleY=1.025f}
                 }.pointerInput(id,positions) {
