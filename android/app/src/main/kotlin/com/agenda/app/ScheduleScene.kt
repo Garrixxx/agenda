@@ -60,7 +60,7 @@ fun ScheduleScene(data:AgendaSnapshot,repository:AgendaViewModel,today:LocalDate
     val fullListState=rememberLazyListState(initialFirstVisibleItemIndex=3)
     BackHandler(selected!=null && !full) {selected=null}
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        Box(Modifier.matchParentSize().background(if(data.appearance.assetId==null) Color(data.appearance.color) else Ink.Canvas))
+        Box(Modifier.matchParentSize().background(if(data.appearance.assetId==null && data.appearance.color!=0xFFEEEEEEL) Color(data.appearance.color) else Ink.Canvas))
         background?.let {Image(it,contentDescription=null,contentScale=ContentScale.Crop,modifier=Modifier.matchParentSize().graphicsLayer {alpha=.20f})}
         val fullWidth=maxWidth-32.dp
         val density=LocalDensity.current
@@ -173,13 +173,17 @@ private fun HangingDateCard(day:LocalDate,today:LocalDate,data:AgendaSnapshot,re
                 }
                 if(retainDetails) Column(Modifier.heightIn(max=maxHeight).verticalScroll(rememberScrollState())
                     .graphicsLayer {alpha=((progress.value-.2f)/.6f).coerceIn(0f,1f)}
-                    .then(if(!interactive) Modifier.clearAndSetSemantics {} else Modifier).padding(16.dp)) {
+                    .then(if(!interactive) Modifier.clearAndSetSemantics {} else Modifier)) {
                     DisposableEffect(day) {
                         if(BuildConfig.DEBUG) android.util.Log.d("AgendaDateDetails","${android.os.SystemClock.elapsedRealtime()}|$day|composed")
                         onDispose {}
                     }
-                    DayHeading(day,today,data);HorizontalLine()
-                    DayContent(day,data,repository,onInfo,enabled=interactive)
+                    DayHeading(day,today,data,highlight=day==today,
+                        modifier=if(day==today) Modifier else Modifier.padding(start=16.dp,end=16.dp,top=16.dp))
+                    Column(Modifier.padding(start=16.dp,end=16.dp,bottom=16.dp)) {
+                        HorizontalLine()
+                        DayContent(day,data,repository,onInfo,enabled=interactive)
+                    }
                 }
             }) {measurables,_->
                 val compact=measurables[0].measure(Constraints.fixedWidth(70.dp.roundToPx()))
@@ -195,14 +199,15 @@ private fun HangingDateCard(day:LocalDate,today:LocalDate,data:AgendaSnapshot,re
 }
 
 @Composable
-private fun DayHeading(day:LocalDate,today:LocalDate,data:AgendaSnapshot) {
-    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-        AgendaText("${day.dayOfMonth}",size=38,color=Ink.Primary)
+private fun DayHeading(day:LocalDate,today:LocalDate,data:AgendaSnapshot,highlight:Boolean=false,modifier:Modifier=Modifier) {
+    val detailColor=if(highlight) Ink.Text else Ink.Muted
+    Row(modifier.fillMaxWidth().then(if(highlight) Modifier.background(Ink.Teal).padding(16.dp) else Modifier),verticalAlignment=Alignment.CenterVertically) {
+        AgendaText("${day.dayOfMonth}",size=38,color=if(highlight) Ink.Text else Ink.Primary)
         Column(Modifier.weight(1f).padding(start=8.dp)) {
-            AgendaText("${day.monthValue} 月 / ${weekday(day)}",size=12,color=Ink.Muted)
-            if(day==today) AgendaText("今天",size=12,color=Ink.Control)
+            AgendaText("${day.monthValue} 月 / ${weekday(day)}",size=12,color=detailColor)
+            if(day==today) AgendaText("今天",size=12,color=if(highlight) Ink.Text else Ink.Control)
         }
-        AgendaText("${data.schedule.count {it.date==day}} 项",size=12,color=Ink.Muted)
+        AgendaText("${data.schedule.count {it.date==day}} 项",size=12,color=detailColor)
     }
 }
 

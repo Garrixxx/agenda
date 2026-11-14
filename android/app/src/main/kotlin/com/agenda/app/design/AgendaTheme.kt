@@ -12,12 +12,14 @@ import androidx.compose.ui.unit.sp
 import com.agenda.app.R
 
 object Ink {
-    val Canvas = Color(0xFFEEEEEE)
+    val Canvas = Color(0xFFE8E8E8)
     val Surface = Color(0xFFFAFAFA)
     val Text = Color(0xFF222831)
     val Muted = Color(0xFF59616B)
     val Primary = Color(0xFF3B4F62)
     val Teal = Color(0xFF00ADB5)
+    val ActionAccent = Color(0xFF18ADB4)
+    val ActionBorder = Color(0xFFE9EDF0)
     val Control = Color(0xFF00767C)
     val CardBorder = Color(0xFFE0E6EB)
     val Connection = Color(0xFF8798A5)

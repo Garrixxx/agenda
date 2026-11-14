@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
@@ -35,6 +36,7 @@ fun ExpandablePair(ids:List<String>,expanded:String?,onSelect:(String)->Unit,
     label:(String)->String,baseHeight:Dp=148.dp,
     cardModifier:(String)->Modifier={Modifier},
     progress:((String)->Float)?=null,
+    borderColor:Color=Ink.CardBorder,
     header:@Composable (String)->Unit,body:@Composable (String,Boolean)->Unit) {
     val left=animateFloatAsState(if(expanded==ids[0]) 1f else 0f,AgendaMotion.container(),label="pair-left")
     val right=animateFloatAsState(if(ids.size>1 && expanded==ids[1]) 1f else 0f,AgendaMotion.container(),label="pair-right")
@@ -49,7 +51,7 @@ fun ExpandablePair(ids:List<String>,expanded:String?,onSelect:(String)->Unit,
             val neighbour=if(index==0) right else left
             val interactive by remember(own,expanded,id) {derivedStateOf {expanded==id && own.value>.96f}}
             Box(cardModifier(id).clip(RoundedCornerShape(12.dp)).background(Ink.Surface)
-                .border(1.dp,Ink.CardBorder,RoundedCornerShape(12.dp))
+                .border(1.dp,borderColor,RoundedCornerShape(12.dp))
                 .clickable {onSelect(id)}.semantics {contentDescription=label(id)}
                 .onSizeChanged {if(BuildConfig.DEBUG) Log.d("AgendaBoardMotion","${SystemClock.elapsedRealtime()}|$id|${it.width}|${it.height}")}) {
                 Layout(content={

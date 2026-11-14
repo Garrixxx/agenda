@@ -148,21 +148,16 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                 }) {
                 GlassSurface(glass,Modifier.then(if(kind=="week") Modifier.widthIn(max=320.dp).fillMaxWidth(.90f) else Modifier.fillMaxWidth())
                     .heightIn(max=maxPanelHeight).semantics {paneTitle=title}) {
-                    Column(Modifier.verticalScroll(rememberScrollState()).animateContentSize(spring(dampingRatio=.8f,stiffness=400f))
-                        .padding(if(creating) 0.dp else 18.dp)) {
-                        // Tint the same blurred glass; never put an opaque form inside it.
-                        Row(Modifier.fillMaxWidth().then(if(creating) Modifier
-                            .background(Brush.verticalGradient(listOf(Ink.Teal.copy(alpha=.48f),Ink.Teal.copy(alpha=.28f))))
-                            .padding(start=18.dp,end=6.dp,top=8.dp,bottom=8.dp) else Modifier),verticalAlignment=Alignment.CenterVertically) {
-                            AgendaText(title,title=!creating && material==null,size=if(creating) 18 else 17,
-                                color=if(creating) Ink.Text else if(material!=null) Ink.Muted else Ink.Primary,
+                    Column(Modifier.verticalScroll(rememberScrollState()).animateContentSize(spring(dampingRatio=.8f,stiffness=400f)).padding(18.dp)) {
+                        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                            AgendaText(title,title=!creating && material==null,size=if(creating) 13 else 17,
+                                color=if(creating || material!=null) Ink.Muted else Ink.Primary,
                                 maxLines=2,modifier=Modifier.weight(1f))
                             if(creating && !editing) TextButton({onNavigate(if(objectMode) "create" else "create-object")},enabled=!saving) {
-                                AgendaText(if(objectMode) "创建任务" else "创建对象",size=12,color=Ink.Text)
+                                AgendaText(if(objectMode) "创建任务" else "创建对象",size=12,color=Ink.Muted)
                             }
                             MarkButton(Mark.CLOSE,"关闭",{requestClose()})
                         }
-                        Column(Modifier.padding(if(creating) 18.dp else 0.dp)) {
                         when {
                             kind=="backup" -> BackupPanel(repository,{scheduleSaving=it})
                             kind=="leisure" -> LeisurePanel(data,repository,onNavigate,{scheduleDirty=it},{scheduleSaving=it})
@@ -254,6 +249,34 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                                         Spacer(Modifier.width(6.dp))
                                         AgendaText("归属、日期、意愿",size=12,color=Ink.Muted)
                                     }
+                                    Spacer(Modifier.weight(1f))
+                                    Button(onClick={
+                                        if(value.isBlank()) error="请先填写名称"
+                                        else {
+                                            val due=if(dateText.isBlank()) null else runCatching {LocalDate.parse(dateText)}.getOrNull()
+                                            if(!objectMode && dateText.isNotBlank() && due==null) {
+                                                error="请填写有效日期，例如 2026-11-03"; more=true;tab=1
+                                            } else {
+                                                val objectName=value
+                                                val draft=TaskDraft(value,effort,parent,due,wants,should)
+                                                saving=true
+                                                scope.launch {
+                                                    try {
+                                                        if(editingObject!=null) repository.renameObject(editingObject.id,objectName)
+                                                        else if(editingTask!=null) repository.updateTask(editingTask.id,draft)
+                                                        else if(objectMode) repository.createObject(objectName)
+                                                        else repository.createTask(draft)
+                                                        onClose()
+                                                    } catch(c:kotlinx.coroutines.CancellationException) {throw c}
+                                                    catch(e:Exception) {error=saveError(e)}
+                                                    finally {saving=false}
+                                                }
+                                            }
+                                        }
+                                    },enabled=!saving,shape=RoundedCornerShape(11.dp),contentPadding=PaddingValues(horizontal=14.dp,vertical=11.dp)) {
+                                        AgendaText(if(saving) "保存中…" else if(editing) "保存修改" else "创建",color=Ink.Surface,size=13)
+                                        Spacer(Modifier.width(8.dp)); AgendaIcon(if(editing) Mark.CHECK else Mark.PLUS,Ink.Surface,Modifier.size(17.dp))
+                                    }
                                 }
                                 val summary=listOfNotNull(data.objects.find {it.id==parent}?.name,
                                     dateText.takeIf {it.isNotBlank()}?.let {"截止 $it"},
@@ -286,35 +309,6 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                                             }
                                             AgendaText("可以同时选择，也可以都不选。",size=12,color=Ink.Muted,modifier=Modifier.padding(top=8.dp))
                                         }
-                                    }
-                                }
-                                Row(Modifier.fillMaxWidth().padding(top=16.dp),horizontalArrangement=Arrangement.End) {
-                                    Button(onClick={
-                                        if(value.isBlank()) error="请先填写名称"
-                                        else {
-                                            val due=if(dateText.isBlank()) null else runCatching {LocalDate.parse(dateText)}.getOrNull()
-                                            if(!objectMode && dateText.isNotBlank() && due==null) {
-                                                error="请填写有效日期，例如 2026-11-03"; more=true;tab=1
-                                            } else {
-                                                val objectName=value
-                                                val draft=TaskDraft(value,effort,parent,due,wants,should)
-                                                saving=true
-                                                scope.launch {
-                                                    try {
-                                                        if(editingObject!=null) repository.renameObject(editingObject.id,objectName)
-                                                        else if(editingTask!=null) repository.updateTask(editingTask.id,draft)
-                                                        else if(objectMode) repository.createObject(objectName)
-                                                        else repository.createTask(draft)
-                                                        onClose()
-                                                    } catch(c:kotlinx.coroutines.CancellationException) {throw c}
-                                                    catch(e:Exception) {error=saveError(e)}
-                                                    finally {saving=false}
-                                                }
-                                            }
-                                        }
-                                    },enabled=!saving,shape=RoundedCornerShape(11.dp),contentPadding=PaddingValues(horizontal=14.dp,vertical=11.dp)) {
-                                        AgendaText(if(saving) "保存中…" else if(editing) "保存修改" else "创建",color=Ink.Surface,size=13)
-                                        Spacer(Modifier.width(8.dp)); AgendaIcon(if(editing) Mark.CHECK else Mark.PLUS,Ink.Surface,Modifier.size(17.dp))
                                     }
                                 }
                                 error?.let {AgendaText(it,size=12,color=Ink.Danger,modifier=Modifier.padding(top=10.dp).semantics {liveRegion=LiveRegionMode.Polite})}
@@ -438,7 +432,6 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                                 TextButton({discard=false}) {AgendaText("继续编辑",size=13,color=Ink.Primary)}
                                 TextButton(onClose) {AgendaText("放弃编辑",size=13,color=Ink.Primary)}
                             }
-                        }
                         }
                     }
                 }

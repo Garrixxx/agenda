@@ -12,6 +12,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
@@ -113,7 +114,8 @@ fun AgendaApp(repository: AgendaViewModel,onDatasetChanged:()->Unit={}) {
                 }
                 drawLayer(backdrop)
             } else drawContent()
-        }.then(if(overlay!=null) Modifier.clearAndSetSemantics {} else Modifier)
+        }.then(if(overlay=="create" || overlay=="create-object") Modifier.blur(6.dp) else Modifier)
+            .then(if(overlay!=null) Modifier.clearAndSetSemantics {} else Modifier)
             .statusBarsPadding().navigationBarsPadding()) {
             Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal=12.dp)) {
                 if(page != 1) MarkButton(Mark.FLIP, if(page==0) "切换事项视图" else "切换日程视图", {
@@ -183,7 +185,7 @@ private fun ActionScene(data: AgendaSnapshot, repository: AgendaViewModel, today
         AgendaText("现在，适合做什么", title=true,size=20,color=Ink.Primary)
         Spacer(Modifier.height(4.dp))
         val urgent = urgentTasks(data.tasks,today,limit=1).firstOrNull()
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Ink.Teal)
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Ink.ActionAccent)
             .animateContentSize().padding(16.dp)) {
             AgendaText("尽快做",title=true,size=19,color=Ink.Text)
             if(urgent==null) AgendaText("一周内暂无待完成任务，按自己的节奏来。",color=Ink.Text,
@@ -197,7 +199,7 @@ private fun ActionScene(data: AgendaSnapshot, repository: AgendaViewModel, today
         val labels = Effort.entries.map {it.label} + "休闲活动"
         labels.chunked(2).forEach {pair->
             ExpandablePair(pair,expanded,{expanded=if(expanded==it) null else it},
-                label={"行动卡片：$it"},baseHeight=148.dp,
+                label={"行动卡片：$it"},baseHeight=148.dp,borderColor=Ink.ActionBorder,
                 header={label->
                     AgendaText(label,title=true,size=19,color=Ink.Primary)
                     val tasks=data.tasks.filter {it.effort?.label==label && !it.completed}
