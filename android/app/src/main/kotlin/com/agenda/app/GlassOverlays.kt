@@ -86,7 +86,7 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                 val added=repository.importMaterial(collection.id,uri)
                 onNavigate("material-edit:${added.id}")
             } catch(c:kotlinx.coroutines.CancellationException) {throw c}
-            catch(e:Exception) {error="材料未保存，请检查可用空间或文件权限后重试"}
+            catch(e:Exception) {error=tr("材料未保存，请检查可用空间或文件权限后重试")}
             finally {importing=false}
         }
     }
@@ -106,25 +106,25 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
     val note=data.objects.flatMap {it.notes}.find {kind=="note:${it.id}"}
     val taskDetails=data.tasks.find {kind=="task-details:${it.id}"}
     val title=when {
-        kind=="backup"->"备份与恢复"
-        kind=="leisure"->"休闲活动"
-        kind=="appearance"->"背景与文字"
-        kind=="daily-reminder"->"近三天的截止提醒"
-        kind.startsWith("delete:")->"删除确认"
-        kind.startsWith("edit-schedule:")->"编辑日程"
-        scheduling->"添加日程"
-        taskDetails!=null->"任务说明与材料"
-        editingNote!=null->"编辑说明"
+        kind=="backup"->tr("备份与恢复")
+        kind=="leisure"->tr("休闲活动")
+        kind=="appearance"->tr("背景与文字")
+        kind=="daily-reminder"->tr("近三天的截止提醒")
+        kind.startsWith("delete:")->tr("删除确认")
+        kind.startsWith("edit-schedule:")->tr("编辑日程")
+        scheduling->tr("添加日程")
+        taskDetails!=null->tr("任务说明与材料")
+        editingNote!=null->tr("编辑说明")
         note!=null->note.title
-        noteCreate->"添加说明"
-        materialList->"${collection?.name.orEmpty()} · 材料"
-        noteList->"${collection?.name.orEmpty()} · 说明"
-        creating->if(editing) {if(objectMode) "编辑对象" else "编辑任务"} else if(objectMode) "新对象" else "新任务"
-        kind=="search"->"搜索"
-        kind=="week"->"周计划"
+        noteCreate->tr("添加说明")
+        materialList->tr("{0} · 材料",collection?.name.orEmpty())
+        noteList->tr("{0} · 说明",collection?.name.orEmpty())
+        creating->if(editing) {if(objectMode) tr("编辑对象") else tr("编辑任务")} else if(objectMode) tr("新对象") else tr("新任务")
+        kind=="search"->tr("搜索")
+        kind=="week"->tr("周计划")
         task!=null->task.name
         material!=null->material.displayTitle
-        else->"说明"
+        else->tr("说明")
     }
     val ime=WindowInsets.ime.getBottom(LocalDensity.current)>0
     // The caller prepares the backdrop before mounting this surface, so the
@@ -134,7 +134,7 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.matchParentSize().background(Color.Black.copy(alpha=.025f))
             .clickable(interactionSource=remember {MutableInteractionSource()},indication=null,
-                onClick={requestClose()}).semantics {contentDescription="关闭浮层"})
+                onClick={requestClose()}).semantics {contentDescription=tr("关闭浮层")})
         BoxWithConstraints(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
             val top=when(kind) {"week"->54.dp;"search"->56.dp;else->12.dp}
             val bottom=if(ime) 12.dp else 78.dp
@@ -154,9 +154,9 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                                 color=if(creating || material!=null) Ink.Muted else Ink.Primary,
                                 maxLines=2,modifier=Modifier.weight(1f))
                             if(creating && !editing) TextButton({onNavigate(if(objectMode) "create" else "create-object")},enabled=!saving) {
-                                AgendaText(if(objectMode) "创建任务" else "创建对象",size=12,color=Ink.Muted)
+                                AgendaText(if(objectMode) tr("创建任务") else tr("创建对象"),size=12,color=Ink.Muted)
                             }
-                            MarkButton(Mark.CLOSE,"关闭",{requestClose()})
+                            MarkButton(Mark.CLOSE,tr("关闭"),{requestClose()})
                         }
                         when {
                             kind=="backup" -> BackupPanel(repository,{scheduleSaving=it})
@@ -165,51 +165,51 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                             kind=="daily-reminder" -> {
                                 val notice=dailyNotice
                                 val items=if(notice==null) emptyList() else reminderTasks(data.tasks,notice.first).filter {it.id in notice.second}
-                                AgendaText("明天起三个自然日内，留意这些未完成任务。",size=13,color=Ink.Muted,modifier=Modifier.padding(vertical=12.dp))
+                                AgendaText(tr("明天起三个自然日内，留意这些未完成任务。"),size=13,color=Ink.Muted,modifier=Modifier.padding(vertical=12.dp))
                                 items.forEach {TaskLine(it,repository,{id->onNavigate("task:$id")},date=true)}
-                                if(items.isEmpty()) AgendaText("目前没有待提醒的任务",size=13,color=Ink.Muted)
+                                if(items.isEmpty()) AgendaText(tr("目前没有待提醒的任务"),size=13,color=Ink.Muted)
                             }
                             kind.startsWith("delete:") -> DeleteConfirmation(kind,repository,onClose,{scheduleSaving=it})
                             taskDetails!=null -> TaskDetailsPanel(taskDetails,data,repository,{onNavigate("task:${taskDetails.id}")},{scheduleDirty=it},{scheduleSaving=it})
                             scheduling -> ScheduleComposer(kind,data,repository,onClose,{scheduleDirty=it},{scheduleSaving=it},{onNavigate("delete:schedule:$it")})
                             materialList || noteList -> {
-                                TextButton({onNavigate("edit-object:${collection?.id}")}) {AgendaText("编辑对象",size=13,color=Ink.Primary)}
-                                TextButton({onNavigate("delete:object:${collection?.id}")}) {AgendaText("删除对象",size=13,color=Ink.Danger)}
+                                TextButton({onNavigate("edit-object:${collection?.id}")}) {AgendaText(tr("编辑对象"),size=13,color=Ink.Primary)}
+                                TextButton({onNavigate("delete:object:${collection?.id}")}) {AgendaText(tr("删除对象"),size=13,color=Ink.Danger)}
                                 if(materialList) {
                                     collection?.materials?.forEach {item->
                                         AgendaText(item.displayTitle,size=14,modifier=Modifier.fillMaxWidth().clickable {onNavigate("material:${item.id}")}.padding(vertical=14.dp))
                                     }
                                     Button(onClick={pickMaterial.launch(arrayOf("*/*"))},enabled=!importing,shape=RoundedCornerShape(11.dp),modifier=Modifier.padding(top=12.dp)) {
                                         AgendaIcon(Mark.PLUS,Ink.Surface);Spacer(Modifier.width(8.dp))
-                                        AgendaText(if(importing) "正在复制…" else "添加材料",color=Ink.Surface)
+                                        AgendaText(if(importing) tr("正在复制…") else tr("添加材料"),color=Ink.Surface)
                                     }
-                                    AgendaText("选择文件后保存一份副本。",size=12,color=Ink.Muted,modifier=Modifier.padding(top=10.dp))
+                                    AgendaText(tr("选择文件后保存一份副本。"),size=12,color=Ink.Muted,modifier=Modifier.padding(top=10.dp))
                                 } else {
                                     collection?.notes?.forEach {item->AgendaText(item.title,size=14,
                                         modifier=Modifier.fillMaxWidth().clickable {onNavigate("note:${item.id}")}.padding(vertical=14.dp))}
                                     Button(onClick={onNavigate("create-note:${collection?.id}")},shape=RoundedCornerShape(11.dp),modifier=Modifier.padding(top=12.dp)) {
-                                        AgendaIcon(Mark.PLUS,Ink.Surface);Spacer(Modifier.width(8.dp));AgendaText("添加说明",color=Ink.Surface)
+                                        AgendaIcon(Mark.PLUS,Ink.Surface);Spacer(Modifier.width(8.dp));AgendaText(tr("添加说明"),color=Ink.Surface)
                                     }
                                 }
                                 error?.let {AgendaText(it,size=12,color=Ink.Danger,modifier=Modifier.padding(top=10.dp))}
                             }
                             note!=null -> {
                                 AgendaText(note.body,size=14,modifier=Modifier.padding(vertical=16.dp))
-                                TextButton({onNavigate("edit-note:${note.id}")}) {AgendaText("编辑说明",size=13,color=Ink.Primary)}
-                                TextButton({onNavigate("delete:note:${note.id}")}) {AgendaText("删除说明",size=13,color=Ink.Danger)}
+                                TextButton({onNavigate("edit-note:${note.id}")}) {AgendaText(tr("编辑说明"),size=13,color=Ink.Primary)}
+                                TextButton({onNavigate("delete:note:${note.id}")}) {AgendaText(tr("删除说明"),size=13,color=Ink.Danger)}
                             }
                             noteCreate -> {
-                                AgendaText("标题",size=12,color=Ink.Muted,modifier=Modifier.padding(bottom=6.dp))
-                                OutlinedTextField(noteTitle,{noteTitle=it;error=null},placeholder={AgendaText("给这份说明起个名字",color=Ink.Muted)},
-                                    modifier=Modifier.fillMaxWidth().semantics {contentDescription="说明标题"},
+                                AgendaText(tr("标题"),size=12,color=Ink.Muted,modifier=Modifier.padding(bottom=6.dp))
+                                AgendaOutlinedTextField(noteTitle,{noteTitle=it;error=null},placeholder={AgendaText(tr("给这份说明起个名字"),color=Ink.Muted)},
+                                    modifier=Modifier.fillMaxWidth().semantics {contentDescription=tr("说明标题")},
                                     shape=RoundedCornerShape(14.dp),singleLine=true)
-                                AgendaText("正文",size=12,color=Ink.Muted,modifier=Modifier.padding(top=16.dp,bottom=6.dp))
-                                OutlinedTextField(value,{value=it},placeholder={AgendaText("记下说明…",color=Ink.Muted)},
-                                    modifier=Modifier.fillMaxWidth().heightIn(min=140.dp).semantics {contentDescription="说明内容"},
+                                AgendaText(tr("正文"),size=12,color=Ink.Muted,modifier=Modifier.padding(top=16.dp,bottom=6.dp))
+                                AgendaOutlinedTextField(value,{value=it},placeholder={AgendaText(tr("记下说明…"),color=Ink.Muted)},
+                                    modifier=Modifier.fillMaxWidth().heightIn(min=140.dp).semantics {contentDescription=tr("说明内容")},
                                     shape=RoundedCornerShape(14.dp),minLines=3)
                                 Button(onClick={
-                                    if(noteTitle.isBlank()) error="请先填写说明标题"
-                                    else if(value.isBlank()) error="请先填写说明正文"
+                                    if(noteTitle.isBlank()) error=tr("请先填写说明标题")
+                                    else if(value.isBlank()) error=tr("请先填写说明正文")
                                     else if(collection!=null || editingNote!=null) {
                                         val ownerId=collection?.id;val titleToSave=noteTitle;val bodyToSave=value
                                         saving=true
@@ -223,21 +223,21 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                                             finally {saving=false}
                                         }
                                     }
-                                },enabled=!saving,shape=RoundedCornerShape(11.dp),modifier=Modifier.align(Alignment.End).padding(top=14.dp)) {AgendaText(if(saving) "保存中…" else "保存说明",color=Ink.Surface)}
+                                },enabled=!saving,shape=RoundedCornerShape(11.dp),modifier=Modifier.align(Alignment.End).padding(top=14.dp)) {AgendaText(if(saving) tr("保存中…") else tr("保存说明"),color=Ink.Surface)}
                                 error?.let {AgendaText(it,size=12,color=Ink.Danger)}
                             }
                             creating -> {
-                                AgendaInput(value,{value=it;error=null},"名称",if(objectMode) "记下一个对象…" else "记下一件事…",size=21)
+                                AgendaInput(value,{value=it;error=null},tr("名称"),if(objectMode) tr("记下一个对象…") else tr("记下一件事…"),size=21)
                                 if(objectMode) {
-                                    AgendaText("课程、项目，以及你想放在一起的事情。",size=12,color=Ink.Muted,modifier=Modifier.padding(top=16.dp))
+                                    AgendaText(tr("课程、项目，以及你想放在一起的事情。"),size=12,color=Ink.Muted,modifier=Modifier.padding(top=16.dp))
                                 } else {
                                     Row(Modifier.fillMaxWidth().padding(top=16.dp),verticalAlignment=Alignment.CenterVertically) {
-                                        AgendaText("适合怎么做",size=12,color=Ink.Muted,modifier=Modifier.weight(1f))
-                                        AgendaText("可跳过",size=11,color=Ink.Muted)
+                                        AgendaText(tr("适合怎么做"),size=12,color=Ink.Muted,modifier=Modifier.weight(1f))
+                                        AgendaText(tr("可跳过"),size=11,color=Ink.Muted)
                                     }
                                     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
                                         Effort.entries.forEach {item->
-                                            OptionChip(item.label,effort==item,{effort=if(effort==item) null else item},Modifier.weight(1f))
+                                            OptionChip(tr(item.label),effort==item,{effort=if(effort==item) null else item},Modifier.weight(1f))
                                         }
                                     }
                                 }
@@ -247,15 +247,15 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                                     },contentPadding=PaddingValues(horizontal=0.dp)) {
                                         AgendaIcon(if(more) Mark.CLOSE else Mark.PLUS,Ink.Muted,Modifier.size(16.dp))
                                         Spacer(Modifier.width(6.dp))
-                                        AgendaText("归属、日期、意愿",size=12,color=Ink.Muted)
+                                        AgendaText(tr("归属、日期、意愿"),size=12,color=Ink.Muted)
                                     }
                                     Spacer(Modifier.weight(1f))
                                     Button(onClick={
-                                        if(value.isBlank()) error="请先填写名称"
+                                        if(value.isBlank()) error=tr("请先填写名称")
                                         else {
                                             val due=if(dateText.isBlank()) null else runCatching {LocalDate.parse(dateText)}.getOrNull()
                                             if(!objectMode && dateText.isNotBlank() && due==null) {
-                                                error="请填写有效日期，例如 2026-11-03"; more=true;tab=1
+                                                error=tr("请填写有效日期，例如 2026-11-03"); more=true;tab=1
                                             } else {
                                                 val objectName=value
                                                 val draft=TaskDraft(value,effort,parent,due,wants,should)
@@ -274,28 +274,28 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                                             }
                                         }
                                     },enabled=!saving,shape=RoundedCornerShape(11.dp),contentPadding=PaddingValues(horizontal=14.dp,vertical=11.dp)) {
-                                        AgendaText(if(saving) "保存中…" else if(editing) "保存修改" else "创建",color=Ink.Surface,size=13)
+                                        AgendaText(if(saving) tr("保存中…") else if(editing) tr("保存修改") else tr("创建"),color=Ink.Surface,size=13)
                                         Spacer(Modifier.width(8.dp)); AgendaIcon(if(editing) Mark.CHECK else Mark.PLUS,Ink.Surface,Modifier.size(17.dp))
                                     }
                                 }
                                 val summary=listOfNotNull(data.objects.find {it.id==parent}?.name,
-                                    dateText.takeIf {it.isNotBlank()}?.let {"截止 $it"},
-                                    if(wants) "想做" else null,if(should) "该做" else null).joinToString(" · ")
+                                    dateText.takeIf {it.isNotBlank()}?.let {tr("截止 {0}",it)},
+                                    if(wants) tr("想做") else null,if(should) tr("该做") else null).joinToString(" · ")
                                 if(!objectMode && summary.isNotEmpty()) AgendaText(summary,size=12,color=Ink.Muted,modifier=Modifier.padding(top=10.dp))
                                 if(more && !objectMode) {
                                     Row(Modifier.fillMaxWidth().padding(top=12.dp),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-                                        listOf("归属","日期","意愿").forEachIndexed {index,label->
+                                        listOf(tr("归属"),tr("日期"),tr("意愿")).forEachIndexed {index,label->
                                             OptionChip(label,tab==index,{tab=index},Modifier.weight(1f))
                                         }
                                     }
                                     when(tab) {
                                         0->Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                                            OptionChip("独立任务",parent==null,{parent=null})
+                                            OptionChip(tr("独立任务"),parent==null,{parent=null})
                                             data.objects.forEach {obj->OptionChip(obj.name,parent==obj.id,{parent=obj.id})}
                                         }
                                         1->{
                                             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                                                listOf("今天" to 0L,"明天" to 1L,"三天后" to 3L).forEach {(label,offset)->
+                                                listOf(tr("今天") to 0L,tr("明天") to 1L,tr("三天后") to 3L).forEach {(label,offset)->
                                                     val date=LocalDate.now().plusDays(offset).toString()
                                                     OptionChip(label,dateText==date,{dateText=date;error=null},Modifier.weight(1f))
                                                 }
@@ -304,19 +304,19 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                                         }
                                         2->{
                                             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                                                OptionChip("想做",wants,{wants=!wants},Modifier.weight(1f))
-                                                OptionChip("该做",should,{should=!should},Modifier.weight(1f))
+                                                OptionChip(tr("想做"),wants,{wants=!wants},Modifier.weight(1f))
+                                                OptionChip(tr("该做"),should,{should=!should},Modifier.weight(1f))
                                             }
-                                            AgendaText("可以同时选择，也可以都不选。",size=12,color=Ink.Muted,modifier=Modifier.padding(top=8.dp))
+                                            AgendaText(tr("可以同时选择，也可以都不选。"),size=12,color=Ink.Muted,modifier=Modifier.padding(top=8.dp))
                                         }
                                     }
                                 }
                                 error?.let {AgendaText(it,size=12,color=Ink.Danger,modifier=Modifier.padding(top=10.dp).semantics {liveRegion=LiveRegionMode.Polite})}
                             }
                             kind=="search" -> {
-                                AgendaInput(value,{value=it},"搜索内容","对象、任务、材料、说明",size=15)
+                                AgendaInput(value,{value=it},tr("搜索内容"),tr("对象、任务、材料、说明"),size=15)
                                 Spacer(Modifier.height(16.dp))
-                                if(value.isBlank()) AgendaText("输入关键词，让内容浮现",size=13,color=Ink.Muted)
+                                if(value.isBlank()) AgendaText(tr("输入关键词，让内容浮现"),size=13,color=Ink.Muted)
                                 else {
                                     val matches=buildList<Pair<String,String>> {
                                         data.tasks.filter {it.name.contains(value,true) || it.description.contains(value,true)}.forEach {add(it.name to "task:${it.id}")}
@@ -326,7 +326,7 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                                             obj.notes.filter {it.title.contains(value,true) || it.body.contains(value,true)}.forEach {add(it.title to "note:${it.id}")}
                                         }
                                     }
-                                    if(matches.isEmpty()) AgendaText("没有找到相关内容",size=13,color=Ink.Muted)
+                                    if(matches.isEmpty()) AgendaText(tr("没有找到相关内容"),size=13,color=Ink.Muted)
                                     matches.forEach {(label,target)->AgendaText(label,modifier=Modifier.fillMaxWidth().clickable {onNavigate(target)}.padding(vertical=14.dp))}
                                 }
                             }
@@ -334,23 +334,23 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                                 if(task.description.isNotBlank()) AgendaText(task.description,size=14,modifier=Modifier.padding(vertical=12.dp))
                                 val linked=data.objects.flatMap {it.materials}.filter {it.id in task.materialIds}
                                 if(linked.isNotEmpty()) {
-                                    AgendaText("关联材料",size=12,color=Ink.Muted,modifier=Modifier.padding(top=12.dp))
+                                    AgendaText(tr("关联材料"),size=12,color=Ink.Muted,modifier=Modifier.padding(top=12.dp))
                                     linked.forEach {item->TextButton({onNavigate("material:${item.id}")}) {AgendaText(item.displayTitle,size=14,color=Ink.Primary)}}
                                 }
-                                TextButton({onNavigate("task-details:${task.id}")}) {AgendaText("编辑说明与关联材料",size=13,color=Ink.Primary)}
+                                TextButton({onNavigate("task-details:${task.id}")}) {AgendaText(tr("编辑说明与关联材料"),size=13,color=Ink.Primary)}
                                 Row(verticalAlignment=Alignment.CenterVertically) {
                                     Checkbox(task.completed,{repository.setCompleted(task.id,it)},colors=CheckboxDefaults.colors(
-                                        checkedColor=Ink.Primary,uncheckedColor=Ink.Control),modifier=Modifier.semantics {contentDescription="完成：${task.name}"})
-                                    AgendaText(if(task.completed) "已完成" else "标记为完成",size=13,color=Ink.Muted)
+                                        checkedColor=Ink.Primary,uncheckedColor=Ink.Control),modifier=Modifier.semantics {contentDescription=tr("完成：{0}",task.name)})
+                                    AgendaText(if(task.completed) tr("已完成") else tr("标记为完成"),size=13,color=Ink.Muted)
                                 }
-                                task.due?.let {AgendaText("截止日期：${it.year} 年 ${it.monthValue} 月 ${it.dayOfMonth} 日",size=13,modifier=Modifier.padding(vertical=8.dp))}
-                                AgendaText(task.effort?.label ?: "未分类",size=13,color=Ink.Muted)
-                                data.objects.find {it.id==task.objectId}?.let {AgendaText("归属：${it.name}",size=13,color=Ink.Muted,modifier=Modifier.padding(top=8.dp))}
-                                val intentions=listOfNotNull(if(task.wants) "想做" else null,if(task.should) "该做" else null).joinToString(" · ")
+                                task.due?.let {AgendaText(tr("截止日期：{0} 年 {1} 月 {2} 日",it.year,it.monthValue,it.dayOfMonth),size=13,modifier=Modifier.padding(vertical=8.dp))}
+                                AgendaText(task.effort?.label?.let {tr(it)} ?: tr("未分类"),size=13,color=Ink.Muted)
+                                data.objects.find {it.id==task.objectId}?.let {AgendaText(tr("归属：{0}",it.name),size=13,color=Ink.Muted,modifier=Modifier.padding(top=8.dp))}
+                                val intentions=listOfNotNull(if(task.wants) tr("想做") else null,if(task.should) tr("该做") else null).joinToString(" · ")
                                 if(intentions.isNotEmpty()) AgendaText(intentions,size=13,color=Ink.Muted,modifier=Modifier.padding(top=8.dp))
-                                Button({onNavigate("schedule-for:${task.id}")},shape=RoundedCornerShape(11.dp),modifier=Modifier.padding(top=16.dp)) {AgendaText("安排日程",color=Ink.Surface)}
-                                TextButton({onNavigate("edit-task:${task.id}")}) {AgendaText("编辑任务",size=13,color=Ink.Primary)}
-                                TextButton({onNavigate("delete:task:${task.id}")}) {AgendaText("删除任务",size=13,color=Ink.Danger)}
+                                Button({onNavigate("schedule-for:${task.id}")},shape=RoundedCornerShape(11.dp),modifier=Modifier.padding(top=16.dp)) {AgendaText(tr("安排日程"),color=Ink.Surface)}
+                                TextButton({onNavigate("edit-task:${task.id}")}) {AgendaText(tr("编辑任务"),size=13,color=Ink.Primary)}
+                                TextButton({onNavigate("delete:task:${task.id}")}) {AgendaText(tr("删除任务"),size=13,color=Ink.Danger)}
                             }
                             material!=null -> {
                                 MaterialDetails(material,repository,kind.startsWith("material-edit:"),{scheduleDirty=it},{scheduleSaving=it},
@@ -362,51 +362,51 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                                         context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW)
                                             .setDataAndType(document.uri,document.mimeType).addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION))
                                     } catch(c:kotlinx.coroutines.CancellationException) {throw c}
-                                    catch(e:android.content.ActivityNotFoundException) {error="手机上没有可打开此文件的应用"}
-                                    catch(e:Exception) {error="材料副本暂时无法打开，请稍后重试"}
+                                    catch(e:android.content.ActivityNotFoundException) {error=tr("手机上没有可打开此文件的应用")}
+                                    catch(e:Exception) {error=tr("材料副本暂时无法打开，请稍后重试")}
                                     }
                                 }
                                 error?.let {AgendaText(it,size=12,color=Ink.Danger,modifier=Modifier.padding(top=10.dp))}
                             }
                             kind=="week" -> {
                                 val end=selectedWeek.plusDays(6)
-                                AgendaText("${selectedWeek.year} 年 ${selectedWeek.monthValue} 月 ${selectedWeek.dayOfMonth} 日 — ${end.monthValue} 月 ${end.dayOfMonth} 日",
+                                AgendaText(tr("{0} 年 {1} 月 {2} 日 — {3} 月 {4} 日",selectedWeek.year,selectedWeek.monthValue,selectedWeek.dayOfMonth,end.monthValue,end.dayOfMonth),
                                     size=12,color=Ink.Muted,modifier=Modifier.padding(top=8.dp))
                                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
-                                    TextButton({selectedWeek=selectedWeek.minusWeeks(1)},enabled=!more && !saving) {AgendaText("上一周",size=12)}
-                                    TextButton({selectedWeek=weekStart(LocalDate.now())},enabled=!more && !saving) {AgendaText("本周",size=12)}
-                                    TextButton({selectedWeek=selectedWeek.plusWeeks(1)},enabled=!more && !saving) {AgendaText("下一周",size=12)}
+                                    TextButton({selectedWeek=selectedWeek.minusWeeks(1)},enabled=!more && !saving) {AgendaText(tr("上一周"),size=12)}
+                                    TextButton({selectedWeek=weekStart(LocalDate.now())},enabled=!more && !saving) {AgendaText(tr("本周"),size=12)}
+                                    TextButton({selectedWeek=selectedWeek.plusWeeks(1)},enabled=!more && !saving) {AgendaText(tr("下一周"),size=12)}
                                 }
                                 val items=data.weeklyPlans.filter {it.weekStart==selectedWeek}
-                                if(items.isEmpty()) AgendaText("这一周还没有计划",size=13,color=Ink.Muted,modifier=Modifier.padding(vertical=16.dp))
+                                if(items.isEmpty()) AgendaText(tr("这一周还没有计划"),size=13,color=Ink.Muted,modifier=Modifier.padding(vertical=16.dp))
                                 items.forEach {item->
                                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                                         Checkbox(item.completed,{repository.setWeeklyPlanCompleted(item.id,it)},enabled=!more && !saving,
                                             colors=CheckboxDefaults.colors(checkedColor=Ink.Primary,uncheckedColor=Ink.Control),
-                                            modifier=Modifier.semantics {contentDescription="完成周计划：${item.text}"})
+                                            modifier=Modifier.semantics {contentDescription=tr("完成周计划：{0}",item.text)})
                                         AgendaText(item.text,size=14,color=if(item.completed) Ink.Muted else Ink.Text,modifier=Modifier.weight(1f))
                                         TextButton({editingWeekId=item.id;value=item.text;more=true;error=null},enabled=!more && !saving,
-                                            modifier=Modifier.semantics {contentDescription="编辑周计划：${item.text}"}) {AgendaText("编辑",size=12,color=Ink.Primary)}
+                                            modifier=Modifier.semantics {contentDescription=tr("编辑周计划：{0}",item.text)}) {AgendaText(tr("编辑"),size=12,color=Ink.Primary)}
                                         TextButton({onNavigate("delete:weekly:${item.id}")},enabled=!more && !saving,
-                                            modifier=Modifier.semantics {contentDescription="删除周计划：${item.text}"}) {AgendaText("删除",size=12,color=Ink.Danger)}
+                                            modifier=Modifier.semantics {contentDescription=tr("删除周计划：{0}",item.text)}) {AgendaText(tr("删除"),size=12,color=Ink.Danger)}
                                     }
                                 }
                                 if(!more) {
                                     Button({editingWeekId=null;value="";more=true},shape=RoundedCornerShape(11.dp),modifier=Modifier.padding(top=12.dp)) {
-                                        AgendaIcon(Mark.PLUS,Ink.Surface);Spacer(Modifier.width(8.dp));AgendaText("添加计划",color=Ink.Surface)
+                                        AgendaIcon(Mark.PLUS,Ink.Surface);Spacer(Modifier.width(8.dp));AgendaText(tr("添加计划"),color=Ink.Surface)
                                     }
-                                    AgendaText("本周独立清单",size=11,color=Ink.Muted,modifier=Modifier.padding(top=10.dp))
+                                    AgendaText(tr("本周独立清单"),size=11,color=Ink.Muted,modifier=Modifier.padding(top=10.dp))
                                 } else {
                                     LaunchedEffect(Unit) {weeklyInputFocus.requestFocus()}
-                                    OutlinedTextField(value,{value=it;error=null},label={AgendaText("计划内容",size=12)},
-                                        placeholder={AgendaText("这一周想做什么…",size=14,color=Ink.Muted)},
-                                        modifier=Modifier.fillMaxWidth().focusRequester(weeklyInputFocus).semantics {contentDescription="周计划内容"},
+                                    AgendaOutlinedTextField(value,{value=it;error=null},label={AgendaText(tr("计划内容"),size=12)},
+                                        placeholder={AgendaText(tr("这一周想做什么…"),size=14,color=Ink.Muted)},
+                                        modifier=Modifier.fillMaxWidth().focusRequester(weeklyInputFocus).semantics {contentDescription=tr("周计划内容")},
                                         enabled=!saving,isError=error!=null,shape=RoundedCornerShape(14.dp),minLines=2,maxLines=5)
                                     error?.let {AgendaText(it,size=12,color=Ink.Danger,modifier=Modifier.padding(top=8.dp).semantics {liveRegion=LiveRegionMode.Polite})}
                                     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End) {
-                                        TextButton({more=false;editingWeekId=null;value="";error=null;keyboard?.hide()},enabled=!saving) {AgendaText("取消",size=13)}
+                                        TextButton({more=false;editingWeekId=null;value="";error=null;keyboard?.hide()},enabled=!saving) {AgendaText(tr("取消"),size=13)}
                                         Button({
-                                            if(value.isBlank()) {error="请先填写计划内容";weeklyInputFocus.requestFocus()}
+                                            if(value.isBlank()) {error=tr("请先填写计划内容");weeklyInputFocus.requestFocus()}
                                             else {
                                                 val text=value;val week=selectedWeek;val editId=editingWeekId;saving=true;error=null
                                                 scope.launch {
@@ -419,18 +419,18 @@ fun GlassOverlay(kind:String, data:AgendaSnapshot, repository:AgendaViewModel,
                                                     finally {saving=false}
                                                 }
                                             }
-                                        },enabled=!saving,shape=RoundedCornerShape(11.dp)) {AgendaText(if(saving) "保存中…" else "保存计划",color=Ink.Surface)}
+                                        },enabled=!saving,shape=RoundedCornerShape(11.dp)) {AgendaText(if(saving) tr("保存中…") else tr("保存计划"),color=Ink.Surface)}
                                     }
                                 }
                             }
-                            else -> AgendaText(if(kind.startsWith("info:")) kind.removePrefix("info:") else "这项内容已不存在，请关闭后重新选择。",size=13,color=Ink.Muted,modifier=Modifier.padding(vertical=12.dp))
+                            else -> AgendaText(if(kind.startsWith("info:")) kind.removePrefix("info:") else tr("这项内容已不存在，请关闭后重新选择。"),size=13,color=Ink.Muted,modifier=Modifier.padding(vertical=12.dp))
                         }
                         if(discard) {
                             HorizontalDivider(Modifier.padding(top=16.dp),color=Ink.Divider)
-                            AgendaText("还有未保存的内容，要放弃吗？",size=13,modifier=Modifier.padding(top=12.dp))
+                            AgendaText(tr("还有未保存的内容，要放弃吗？"),size=13,modifier=Modifier.padding(top=12.dp))
                             Row {
-                                TextButton({discard=false}) {AgendaText("继续编辑",size=13,color=Ink.Primary)}
-                                TextButton(onClose) {AgendaText("放弃编辑",size=13,color=Ink.Primary)}
+                                TextButton({discard=false}) {AgendaText(tr("继续编辑"),size=13,color=Ink.Primary)}
+                                TextButton(onClose) {AgendaText(tr("放弃编辑"),size=13,color=Ink.Primary)}
                             }
                         }
                     }
@@ -469,9 +469,9 @@ private fun GlassSurface(glass:GlassSnapshot,modifier:Modifier=Modifier,content:
 @Composable
 internal fun OptionChip(label:String,selected:Boolean,onClick:()->Unit,modifier:Modifier=Modifier) {
     Box(modifier.heightIn(min=48.dp).padding(vertical=4.dp).clip(RoundedCornerShape(12.dp))
-        .background(if(selected) Ink.Primary else Ink.Surface.copy(alpha=.62f))
+        .background(if(selected) (if(InterfaceSettings.blue) Meadow.Green else Ink.Primary) else Ink.Surface.copy(alpha=.62f))
         .clickable(onClick=onClick).semantics {this.selected=selected},contentAlignment=Alignment.Center) {
-        AgendaText(label,size=13,color=if(selected) Ink.Surface else Ink.Muted,
+        AgendaText(label,size=13,color=if(selected) (if(InterfaceSettings.blue) Meadow.Text else Ink.Surface) else Ink.Muted,
             modifier=Modifier.padding(horizontal=8.dp,vertical=10.dp))
     }
 }
@@ -484,10 +484,10 @@ private fun Modifier.borderBottom(color:Color):Modifier = this.drawBehind {
 internal fun AgendaInput(value:String,onChange:(String)->Unit,label:String,placeholder:String,size:Int=16) {
     BasicTextField(value,onChange,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)
         .borderBottom(Ink.Divider).padding(vertical=10.dp).semantics {contentDescription=label},
-        textStyle=TextStyle(fontFamily=BodyFont,fontSize=size.sp,color=Ink.Text,lineHeight=(size*1.45f).sp),
+        textStyle=TextStyle(fontFamily=BodyFont,fontSize=size.sp,color=Ink.Text,lineHeight=(size*1.45f).sp,fontFeatureSettings="tnum",fontSynthesis=androidx.compose.ui.text.font.FontSynthesis.None),
         cursorBrush=SolidColor(Ink.Primary),singleLine=true,
         keyboardOptions=KeyboardOptions(imeAction=ImeAction.Done),
-        visualTransformation=VisualTransformation {TransformedText(agendaAnnotated(it.text),OffsetMapping.Identity)},
+        visualTransformation=agendaInputTransformation(),
         decorationBox={inner->Box {if(value.isEmpty()) AgendaText(placeholder,size=size,color=Ink.Muted);inner()}})
 }
 

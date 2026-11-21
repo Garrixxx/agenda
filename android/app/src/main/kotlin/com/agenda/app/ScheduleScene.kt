@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.platform.LocalDensity
 import com.agenda.app.design.*
 import com.agenda.domain.*
@@ -39,7 +41,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.onSizeChanged
 
-private fun weekday(date:LocalDate) = listOf("周一","周二","周三","周四","周五","周六","周日")[date.dayOfWeek.value-1]
+private fun weekday(date:LocalDate) = listOf(tr("周一"),tr("周二"),tr("周三"),tr("周四"),tr("周五"),tr("周六"),tr("周日"))[date.dayOfWeek.value-1]
 
 @Composable
 fun ScheduleScene(data:AgendaSnapshot,repository:AgendaViewModel,today:LocalDate,full:Boolean,onInfo:(String)->Unit) {
@@ -60,7 +62,7 @@ fun ScheduleScene(data:AgendaSnapshot,repository:AgendaViewModel,today:LocalDate
     val fullListState=rememberLazyListState(initialFirstVisibleItemIndex=3)
     BackHandler(selected!=null && !full) {selected=null}
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        Box(Modifier.matchParentSize().background(if(data.appearance.assetId==null && data.appearance.color!=0xFFEEEEEEL) Color(data.appearance.color) else Ink.Canvas))
+        // Base colour and waves come from the shared app background, including both bars.
         background?.let {Image(it,contentDescription=null,contentScale=ContentScale.Crop,modifier=Modifier.matchParentSize().graphicsLayer {alpha=.20f})}
         val fullWidth=maxWidth-32.dp
         val density=LocalDensity.current
@@ -78,15 +80,14 @@ fun ScheduleScene(data:AgendaSnapshot,repository:AgendaViewModel,today:LocalDate
                 }
             }
         }
-        Column(Modifier.fillMaxSize().padding(top=maxHeight*.08f)) {
-            Column(Modifier.padding(horizontal=20.dp)) {
-                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                    AgendaText("${today.year} 年 ${today.monthValue} 月",size=13,color=Ink.Primary,modifier=Modifier.weight(1f))
-                    TextButton({onInfo("appearance")}) {AgendaText("背景与文字",size=12,color=Ink.Primary)}
-                }
-                if(backgroundFailed) AgendaText("背景图片暂不可用，可重新选择",size=12,color=Ink.Danger)
-                AgendaText("今天，留一点余地。",title=true,size=20,color=Ink.Primary,modifier=Modifier.padding(top=4.dp,bottom=22.dp))
+        Column(Modifier.fillMaxSize().padding(top=8.dp)) {
+            Box(Modifier.fillMaxWidth()) {
+                MeadowHeading(calendar=true,month=tr("{0} 年 {1} 月",today.year,today.monthValue))
+                // The header itself opens the existing appearance editor, keeping the reference uncluttered.
+                Box(Modifier.matchParentSize().clickable {onInfo("appearance")}.semantics {contentDescription=tr("背景与文字")})
             }
+            if(backgroundFailed) AgendaText(tr("背景图片暂不可用，可重新选择"),size=12,color=Ink.Danger)
+            Spacer(Modifier.height(10.dp))
             if(full) {
                 LazyRow(state=fullListState,flingBehavior=rememberSnapFlingBehavior(fullListState),
                     contentPadding=PaddingValues(horizontal=16.dp),horizontalArrangement=Arrangement.spacedBy(12.dp),modifier=Modifier.weight(1f)) {
@@ -103,7 +104,7 @@ fun ScheduleScene(data:AgendaSnapshot,repository:AgendaViewModel,today:LocalDate
             } else {
                 BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
                     val dateAreaHeight=maxHeight
-                    Box(Modifier.fillMaxWidth().height(1.dp).background(Ink.Divider))
+
                     // A finite strip keeps compact dates composed. Lazy composition
                     // during shrinking used to insert several expensive detail trees.
                     val viewportWidth=with(density) {this@BoxWithConstraints.maxWidth.roundToPx()}
@@ -131,12 +132,13 @@ fun ScheduleScene(data:AgendaSnapshot,repository:AgendaViewModel,today:LocalDate
                         }
                     }
                     androidx.compose.animation.AnimatedVisibility(selected==null,enter=fadeIn(tween(120,delayMillis=320)),exit=fadeOut(tween(70)),
-                        modifier=Modifier.align(Alignment.Center).padding(top=80.dp,start=45.dp,end=45.dp)) {
+                        modifier=Modifier.align(Alignment.Center).padding(top=90.dp,start=40.dp,end=40.dp)) {
                         Box(Modifier.fillMaxWidth()
                             .clickable {onInfo("appearance")},contentAlignment=Alignment.Center) {
                             Column(horizontalAlignment=Alignment.CenterHorizontally) {
-                                SchedulePlant()
-                                if(data.appearance.text.isNotBlank()) AgendaText(data.appearance.text,title=true,size=18,color=Ink.Primary)
+                                CalendarBranch()
+                                if(data.appearance.text.isNotBlank()) MeadowText(if(data.appearance.text==ScheduleAppearance().text) tr("留些空白，也留些期待。") else data.appearance.text,size=15,color=Meadow.Muted,
+                                    bold=true,title=true,modifier=Modifier.padding(top=16.dp))
                             }
                         }
                     }
@@ -153,37 +155,35 @@ private fun HangingDateCard(day:LocalDate,today:LocalDate,data:AgendaSnapshot,re
     val interactive by remember(open) {derivedStateOf {open && progress.value>.96f}}
     val retainDetails by remember(open) {derivedStateOf {open || progress.value>.001f}}
     Column(horizontalAlignment=Alignment.CenterHorizontally) {
-        Box(Modifier.width(1.dp).height(14.dp).background(Ink.Divider))
-        Box(Modifier.clip(RoundedCornerShape(16.dp)).drawBehind {
-                drawRect(if(day==today) androidx.compose.ui.graphics.lerp(Ink.Teal,Ink.Surface,progress.value.coerceIn(0f,1f)) else Ink.Surface)
+
+        Box(Modifier.clip(RoundedCornerShape(17.dp)).drawBehind {
+                drawRect(if(day==today) androidx.compose.ui.graphics.lerp(Meadow.Teal,Meadow.White,progress.value.coerceIn(0f,1f)) else Meadow.White.copy(alpha=.88f))
             }.onSizeChanged {
                 if(BuildConfig.DEBUG) android.util.Log.d("AgendaDateMotion","${android.os.SystemClock.elapsedRealtime()}|$day|${it.width}|${it.height}")
-            }.clickable(onClick=onToggle).semantics {contentDescription="${if(open) "收起" else "展开"}日期：$day"}) {
+            }.clickable(onClick=onToggle).semantics {contentDescription=tr("{0}日期：{1}",if(open) tr("收起") else tr("展开"),day)}) {
             Layout(content={
                 Column(Modifier.graphicsLayer {alpha=(1f-progress.value*3).coerceIn(0f,1f)}
                     .clearAndSetSemantics {}.padding(10.dp),horizontalAlignment=Alignment.CenterHorizontally) {
-                    AgendaText(weekday(day),size=12,color=Ink.Muted)
-                    AgendaText("${day.dayOfMonth}",size=27,modifier=Modifier.padding(vertical=4.dp))
-                    AgendaText("${day.monthValue} 月",size=11,color=Ink.Muted)
+                    val compactColor=if(day==today && !InterfaceSettings.blue) Color.White else Meadow.Text
+                    val mutedColor=if(day==today && !InterfaceSettings.blue) Color.White.copy(alpha=.9f) else Meadow.Muted
+                    MeadowText(weekday(day),size=11,color=mutedColor)
+                    MeadowText("${day.dayOfMonth}",size=24,color=compactColor,modifier=Modifier.padding(vertical=3.dp))
+                    MeadowText(tr("{0} 月",day.monthValue),size=10,color=mutedColor)
                     Row(Modifier.padding(top=10.dp,bottom=4.dp),horizontalArrangement=Arrangement.spacedBy(3.dp)) {
                         repeat(data.schedule.count {it.date==day}.coerceIn(1,4)) {
-                            Box(Modifier.size(3.dp).background(if(data.schedule.any {it.date==day}) Ink.Primary else Ink.Divider))
+                            Box(Modifier.size(3.dp).clip(CircleShape).background(if(day==today) Color.White else Color(0xFFCCD7D7)))
                         }
                     }
                 }
                 if(retainDetails) Column(Modifier.heightIn(max=maxHeight).verticalScroll(rememberScrollState())
                     .graphicsLayer {alpha=((progress.value-.2f)/.6f).coerceIn(0f,1f)}
-                    .then(if(!interactive) Modifier.clearAndSetSemantics {} else Modifier)) {
+                    .then(if(!interactive) Modifier.clearAndSetSemantics {} else Modifier).padding(16.dp)) {
                     DisposableEffect(day) {
                         if(BuildConfig.DEBUG) android.util.Log.d("AgendaDateDetails","${android.os.SystemClock.elapsedRealtime()}|$day|composed")
                         onDispose {}
                     }
-                    DayHeading(day,today,data,highlight=day==today,
-                        modifier=if(day==today) Modifier else Modifier.padding(start=16.dp,end=16.dp,top=16.dp))
-                    Column(Modifier.padding(start=16.dp,end=16.dp,bottom=16.dp)) {
-                        HorizontalLine()
-                        DayContent(day,data,repository,onInfo,enabled=interactive)
-                    }
+                    DayHeading(day,today,data);HorizontalLine()
+                    DayContent(day,data,repository,onInfo,enabled=interactive)
                 }
             }) {measurables,_->
                 val compact=measurables[0].measure(Constraints.fixedWidth(70.dp.roundToPx()))
@@ -199,15 +199,14 @@ private fun HangingDateCard(day:LocalDate,today:LocalDate,data:AgendaSnapshot,re
 }
 
 @Composable
-private fun DayHeading(day:LocalDate,today:LocalDate,data:AgendaSnapshot,highlight:Boolean=false,modifier:Modifier=Modifier) {
-    val detailColor=if(highlight) Ink.Text else Ink.Muted
-    Row(modifier.fillMaxWidth().then(if(highlight) Modifier.background(Ink.Teal).padding(16.dp) else Modifier),verticalAlignment=Alignment.CenterVertically) {
-        AgendaText("${day.dayOfMonth}",size=38,color=if(highlight) Ink.Text else Ink.Primary)
+private fun DayHeading(day:LocalDate,today:LocalDate,data:AgendaSnapshot) {
+    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+        AgendaText("${day.dayOfMonth}",size=38,color=Ink.Primary)
         Column(Modifier.weight(1f).padding(start=8.dp)) {
-            AgendaText("${day.monthValue} 月 / ${weekday(day)}",size=12,color=detailColor)
-            if(day==today) AgendaText("今天",size=12,color=if(highlight) Ink.Text else Ink.Control)
+            AgendaText(tr("{0} 月 / {1}",day.monthValue,weekday(day)),size=12,color=Ink.Muted)
+            if(day==today) AgendaText(tr("今天"),size=12,color=Ink.Control)
         }
-        AgendaText("${data.schedule.count {it.date==day}} 项",size=12,color=detailColor)
+        AgendaText(tr("{0} 项",data.schedule.count {it.date==day}),size=12,color=Ink.Muted)
     }
 }
 
@@ -216,20 +215,20 @@ private fun DayContent(day:LocalDate,data:AgendaSnapshot,repository:AgendaViewMo
     Period.entries.forEach {period->
         Column(Modifier.fillMaxWidth().padding(bottom=12.dp)) {
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                AgendaText(period.label,size=13,color=Ink.Muted,modifier=Modifier.weight(1f))
-                MarkButton(Mark.PLUS,"${day.monthValue}月${day.dayOfMonth}日${period.label}添加日程",{
+                AgendaText(tr(period.label),size=13,color=Ink.Muted,modifier=Modifier.weight(1f))
+                MarkButton(Mark.PLUS,tr("{0}月{1}日{2}添加日程",day.monthValue,day.dayOfMonth,tr(period.label)),{
                     onInfo("schedule:$day:${period.name}")
                 })
             }
             val entries=data.schedule.filter {it.date==day && it.period==period}
-            if(entries.isEmpty()) AgendaText("留白",size=13,color=Ink.Muted,modifier=Modifier.padding(start=8.dp,bottom=8.dp))
+            if(entries.isEmpty()) AgendaText(tr("留白"),size=13,color=Ink.Muted,modifier=Modifier.padding(start=8.dp,bottom=8.dp))
             entries.forEach {entry->
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                     Checkbox(entry.isCompleted(data.tasks),if(enabled) ({done:Boolean->repository.setScheduleCompleted(entry.id,done)}) else null,
-                        modifier=Modifier.semantics { contentDescription="完成：${entry.name(data.tasks)}" },
+                        modifier=Modifier.semantics { contentDescription=tr("完成：{0}",entry.name(data.tasks)) },
                         colors=CheckboxDefaults.colors(checkedColor=Ink.Primary,uncheckedColor=Ink.Control))
                     Column(Modifier.weight(1f).clickable(enabled=enabled) {onInfo("edit-schedule:${entry.id}")}
-                        .semantics {contentDescription="编辑日程：${entry.name(data.tasks)}"}.padding(vertical=8.dp)) {
+                        .semantics {contentDescription=tr("编辑日程：{0}",entry.name(data.tasks))}.padding(vertical=8.dp)) {
                         AgendaText(entry.name(data.tasks),color=if(entry.isCompleted(data.tasks)) Ink.Muted else Ink.Text)
                         entry.time?.let {AgendaText(it.toString(),size=12,color=Ink.Muted)}
                     }

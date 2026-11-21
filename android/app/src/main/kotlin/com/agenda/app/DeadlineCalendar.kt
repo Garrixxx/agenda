@@ -17,7 +17,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 @Composable
-fun DeadlineCalendar(value:String,onChange:(String)->Unit,label:String="截止日期",allowClear:Boolean=true) {
+fun DeadlineCalendar(value:String,onChange:(String)->Unit,label:String=tr("截止日期"),allowClear:Boolean=true) {
     val selected=runCatching {LocalDate.parse(value)}.getOrNull()
     var month by rememberSaveable {mutableStateOf(YearMonth.from(selected ?: LocalDate.now()))}
     Column(Modifier.fillMaxWidth().padding(top=16.dp).clip(RoundedCornerShape(16.dp))
@@ -25,17 +25,17 @@ fun DeadlineCalendar(value:String,onChange:(String)->Unit,label:String="截止�
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 AgendaText(label,size=11,color=Ink.Muted)
-                AgendaText(selected?.let {"${it.monthValue} 月 ${it.dayOfMonth} 日"} ?: "未设置",size=18,color=Ink.Primary)
+                AgendaText(selected?.let {tr("{0} 月 {1} 日",it.monthValue,it.dayOfMonth)} ?: tr("未设置"),size=18,color=Ink.Primary)
             }
-            if(allowClear) TextButton({onChange("")}) {AgendaText("清除",size=12,color=Ink.Muted)}
+            if(allowClear) TextButton({onChange("")}) {AgendaText(tr("清除"),size=12,color=Ink.Muted)}
         }
         Row(Modifier.fillMaxWidth().padding(vertical=4.dp),verticalAlignment=Alignment.CenterVertically) {
-            MarkButton(Mark.BACK,"上个月",{month=month.minusMonths(1)})
-            Box(Modifier.weight(1f),contentAlignment=Alignment.Center) {AgendaText("${month.year} 年 ${month.monthValue} 月",size=14,color=Ink.Primary)}
-            MarkButton(Mark.BACK,"下个月",{month=month.plusMonths(1)},modifier=Modifier.graphicsLayer {rotationZ=180f})
+            MarkButton(Mark.BACK,tr("上个月"),{month=month.minusMonths(1)})
+            Box(Modifier.weight(1f),contentAlignment=Alignment.Center) {AgendaText(tr("{0} 年 {1} 月",month.year,month.monthValue),size=14,color=Ink.Primary)}
+            MarkButton(Mark.BACK,tr("下个月"),{month=month.plusMonths(1)},modifier=Modifier.graphicsLayer {rotationZ=180f})
         }
         Row(Modifier.fillMaxWidth().background(Ink.Canvas.copy(alpha=.75f)).padding(vertical=8.dp)) {
-            listOf("一","二","三","四","五","六","日").forEach {label->
+            listOf(tr("一"),tr("二"),tr("三"),tr("四"),tr("五"),tr("六"),tr("日")).forEach {label->
                 Box(Modifier.weight(1f),contentAlignment=Alignment.Center) {AgendaText(label,size=11,color=Ink.Muted)}
             }
         }
@@ -49,7 +49,7 @@ fun DeadlineCalendar(value:String,onChange:(String)->Unit,label:String="截止�
                     Box(Modifier.weight(1f).height(44.dp).padding(2.dp).clip(RoundedCornerShape(12.dp))
                         .background(if(date==selected) Ink.Primary else androidx.compose.ui.graphics.Color.Transparent)
                         .clickable {month=YearMonth.from(date);onChange(date.toString())}
-                        .semantics {contentDescription="$label：$date";this.selected=date==selected},contentAlignment=Alignment.Center) {
+                        .semantics {contentDescription=tr("{0}：{1}",label,date);this.selected=date==selected},contentAlignment=Alignment.Center) {
                         AgendaText("${date.dayOfMonth}",size=13,color=if(date==selected) Ink.Surface else if(active) Ink.Text else Ink.Muted.copy(alpha=.6f))
                     }
                 }

@@ -25,7 +25,7 @@ fun ScheduleComposer(kind:String,data:AgendaSnapshot,repository:AgendaViewModel,
     val original=remember(kind) {data.schedule.find {parts[0]=="edit-schedule" && it.id==parts.getOrNull(1)}}
     if(parts[0]=="edit-schedule" && original==null) {
         SideEffect {onDirty(false);onBusy(false)}
-        AgendaText("这项日程已不存在，请关闭后重新选择。",color=Ink.Muted)
+        AgendaText(tr("这项日程已不存在，请关闭后重新选择。"),color=Ink.Muted)
         return
     }
     val initialDate=remember(kind) {original?.date ?: if(parts[0]=="schedule") LocalDate.parse(parts[1]) else LocalDate.now()}
@@ -51,56 +51,56 @@ fun ScheduleComposer(kind:String,data:AgendaSnapshot,repository:AgendaViewModel,
     Column {
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                AgendaText("${date.monthValue} 月 ${date.dayOfMonth} 日",title=true,size=20,color=Ink.Primary)
-                AgendaText("${date.year} 年",size=12,color=Ink.Muted)
+                AgendaText(tr("{0} 月 {1} 日",date.monthValue,date.dayOfMonth),title=true,size=20,color=Ink.Primary)
+                AgendaText(tr("{0} 年",date.year),size=12,color=Ink.Muted)
             }
-            TextButton({calendar=!calendar},enabled=!saving) {AgendaText(if(calendar) "收起日期" else "更改日期",size=13,color=Ink.Primary)}
+            TextButton({calendar=!calendar},enabled=!saving) {AgendaText(if(calendar) tr("收起日期") else tr("更改日期"),size=13,color=Ink.Primary)}
         }
         if(calendar) DeadlineCalendar(date.toString(),{value->
             runCatching {LocalDate.parse(value)}.getOrNull()?.let {date=it;calendar=false;error=null}
-        },label="日程日期",allowClear=false)
+        },label=tr("日程日期"),allowClear=false)
         Row(Modifier.fillMaxWidth().padding(top=12.dp),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-            OptionChip("引用任务",reference,{if(!saving) {reference=true;error=null}},Modifier.weight(1f))
-            OptionChip("临时安排",!reference,{if(!saving) {reference=false;error=null}},Modifier.weight(1f))
+            OptionChip(tr("引用任务"),reference,{if(!saving) {reference=true;error=null}},Modifier.weight(1f))
+            OptionChip(tr("临时安排"),!reference,{if(!saving) {reference=false;error=null}},Modifier.weight(1f))
         }
         if(reference) {
-            if(availableTasks.isEmpty()) AgendaText("没有可引用的未完成任务，可以创建临时安排",size=13,color=Ink.Muted,modifier=Modifier.padding(vertical=16.dp))
+            if(availableTasks.isEmpty()) AgendaText(tr("没有可引用的未完成任务，可以创建临时安排"),size=13,color=Ink.Muted,modifier=Modifier.padding(vertical=16.dp))
             else {
-                if(data.tasks.size>6) AgendaInput(query,{query=it},"查找任务","查找任务",size=14)
+                if(data.tasks.size>6) AgendaInput(query,{query=it},tr("查找任务"),tr("查找任务"),size=14)
                 Column(Modifier.fillMaxWidth().heightIn(max=200.dp).verticalScroll(rememberScrollState()).padding(vertical=8.dp)) {
                     availableTasks.filter {it.name.contains(query,true)}.sortedBy {it.completed}.forEach {task->
                         val chosen=task.id==selectedTask
                         Row(Modifier.fillMaxWidth().padding(vertical=3.dp).clip(RoundedCornerShape(12.dp))
                             .background(if(chosen) Ink.ObjectFill else Ink.Surface.copy(alpha=.45f))
                             .clickable(enabled=!saving) {selectedTask=task.id;error=null}
-                            .semantics {selected=chosen;contentDescription="引用任务：${task.name}"}
+                            .semantics {selected=chosen;contentDescription=tr("引用任务：{0}",task.name)}
                             .padding(horizontal=12.dp,vertical=12.dp),verticalAlignment=Alignment.CenterVertically) {
                             AgendaIcon(if(chosen) Mark.CHECK else Mark.GRAPH,Ink.Primary,Modifier.size(18.dp))
                             Column(Modifier.weight(1f).padding(start=10.dp)) {
                                 AgendaText(task.name,size=14,color=Ink.Text)
-                                if(task.completed) AgendaText("已完成",size=11,color=Ink.Muted)
+                                if(task.completed) AgendaText(tr("已完成"),size=11,color=Ink.Muted)
                             }
                         }
                     }
                 }
             }
-            AgendaText("显示名称（可选）",size=12,color=Ink.Muted,modifier=Modifier.padding(top=8.dp))
-            AgendaInput(alias,{alias=it;error=null},"日程显示名称","默认跟随任务名称",size=14)
-        } else AgendaInput(title,{title=it;error=null},"临时安排内容","记下一项安排…",size=18)
-        AgendaText("时段",size=12,color=Ink.Muted,modifier=Modifier.padding(top=16.dp,bottom=4.dp))
+            AgendaText(tr("显示名称（可选）"),size=12,color=Ink.Muted,modifier=Modifier.padding(top=8.dp))
+            AgendaInput(alias,{alias=it;error=null},tr("日程显示名称"),tr("默认跟随任务名称"),size=14)
+        } else AgendaInput(title,{title=it;error=null},tr("临时安排内容"),tr("记下一项安排…"),size=18)
+        AgendaText(tr("时段"),size=12,color=Ink.Muted,modifier=Modifier.padding(top=16.dp,bottom=4.dp))
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-            Period.entries.forEach {item->OptionChip(item.label,period==item,{if(!saving) {period=item;error=null}},Modifier.weight(1f))}
+            Period.entries.forEach {item->OptionChip(tr(item.label),period==item,{if(!saving) {period=item;error=null}},Modifier.weight(1f))}
         }
-        OutlinedTextField(time,{time=it.trim();error=null},label={AgendaText("具体时间（可选）",size=12,color=Ink.Muted)},
-            placeholder={AgendaText("例如 09:30",size=14,color=Ink.Muted)},singleLine=true,enabled=!saving,
-            modifier=Modifier.fillMaxWidth().padding(top=10.dp).semantics {contentDescription="具体时间"},shape=RoundedCornerShape(12.dp))
+        AgendaOutlinedTextField(time,{time=it.trim();error=null},label={AgendaText(tr("具体时间（可选）"),size=12,color=Ink.Muted)},
+            placeholder={AgendaText(tr("例如 09:30"),size=14,color=Ink.Muted)},singleLine=true,enabled=!saving,
+            modifier=Modifier.fillMaxWidth().padding(top=10.dp).semantics {contentDescription=tr("具体时间")},shape=RoundedCornerShape(12.dp))
         if(error!=null) AgendaText(error!!,size=12,color=Ink.Danger,modifier=Modifier.padding(top=12.dp).semantics {liveRegion=LiveRegionMode.Polite})
         Button(onClick={
             val localTime=if(time.isBlank()) null else runCatching {LocalTime.parse(time)}.getOrNull()
             when {
-                reference && selectedTask==null->error="请选择要引用的任务"
-                !reference && title.isBlank()->error="请填写安排内容"
-                time.isNotBlank() && (localTime==null || !Regex("\\d{2}:\\d{2}").matches(time))->error="请填写有效钟点，例如 09:30"
+                reference && selectedTask==null->error=tr("请选择要引用的任务")
+                !reference && title.isBlank()->error=tr("请填写安排内容")
+                time.isNotBlank() && (localTime==null || !Regex("\\d{2}:\\d{2}").matches(time))->error=tr("请填写有效钟点，例如 09:30")
                 else->{
                     val draft=ScheduleDraft(date,period,localTime,if(reference) selectedTask else null,
                         title,if(reference) alias.takeIf {it.isNotBlank()} else null)
@@ -115,13 +115,13 @@ fun ScheduleComposer(kind:String,data:AgendaSnapshot,repository:AgendaViewModel,
                     }
                 }
             }
-        },enabled=!saving && (!reference || availableTasks.any {it.id==selectedTask}),shape=RoundedCornerShape(11.dp),modifier=Modifier.align(Alignment.End).padding(top=16.dp).semantics {contentDescription="保存日程"}) {
-            AgendaText(if(saving) "保存中…" else if(original!=null) "保存修改" else "添加日程",color=Ink.Surface)
+        },enabled=!saving && (!reference || availableTasks.any {it.id==selectedTask}),shape=RoundedCornerShape(11.dp),modifier=Modifier.align(Alignment.End).padding(top=16.dp).semantics {contentDescription=tr("保存日程")}) {
+            AgendaText(if(saving) tr("保存中…") else if(original!=null) tr("保存修改") else tr("添加日程"),color=Ink.Surface)
             Spacer(Modifier.width(8.dp));AgendaIcon(if(original!=null) Mark.CHECK else Mark.PLUS,Ink.Surface,Modifier.size(17.dp))
         }
         if(original!=null && onDelete!=null) {
-            TextButton({onDelete(original.id)},enabled=!saving && !dirty) {AgendaText("删除日程",color=if(dirty) Ink.Muted else Ink.Danger,size=13)}
-            if(dirty) AgendaText("保存修改或放弃编辑后，可以删除日程。",size=12,color=Ink.Muted)
+            TextButton({onDelete(original.id)},enabled=!saving && !dirty) {AgendaText(tr("删除日程"),color=if(dirty) Ink.Muted else Ink.Danger,size=13)}
+            if(dirty) AgendaText(tr("保存修改或放弃编辑后，可以删除日程。"),size=12,color=Ink.Muted)
         }
     }
 }

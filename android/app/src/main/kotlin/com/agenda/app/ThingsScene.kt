@@ -16,6 +16,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.platform.LocalDensity
@@ -36,8 +38,8 @@ fun ThingsScene(data: AgendaSnapshot, repository: AgendaViewModel, board: Boolea
     if(data.objects.isEmpty() && data.tasks.isEmpty()) {
         Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center) {
             Column(horizontalAlignment=Alignment.CenterHorizontally) {
-                AgendaText("还没有事项",title=true,size=20,color=Ink.Primary)
-                AgendaText("点击右下角加号，创建任务或对象",size=13,color=Ink.Muted,modifier=Modifier.padding(top=12.dp))
+                AgendaText(tr("还没有事项"),title=true,size=20,color=Ink.Primary)
+                AgendaText(tr("点击右下角加号，创建任务或对象"),size=13,color=Ink.Muted,modifier=Modifier.padding(top=12.dp))
             }
         }
         return
@@ -46,13 +48,13 @@ fun ThingsScene(data: AgendaSnapshot, repository: AgendaViewModel, board: Boolea
 }
 
 private data class GraphNode(val id:String,val text:String,val x:Float,val y:Float,val parent:String?=null,val kind:String="task")
-private fun GraphNode.nodeWidth()=when(kind) {"branch"->64f;"object"->124f;else->140f}
+private fun GraphNode.nodeWidth()=when(kind) {"branch"->if(InterfaceSettings.english) 96f else 64f;"object"->124f;else->140f}
 
 @Composable
 private fun RelationshipGraph(data:AgendaSnapshot,onTask:(String)->Unit,onInfo:(String)->Unit,focusObject:String?) {
-    var selectedNode by rememberSaveable {mutableStateOf<String?>(null)}
     var collapsed by rememberSaveable {mutableStateOf(emptySet<String>())}
-    val rawNodes=remember(data) {
+    val english=InterfaceSettings.english
+    val rawNodes=remember(data,english) {
         buildList {
             var groupY=170f
             data.objects.forEach {obj->
@@ -61,12 +63,13 @@ private fun RelationshipGraph(data:AgendaSnapshot,onTask:(String)->Unit,onInfo:(
                 val lastMaterialY=cy-130+obj.materials.lastIndex.coerceAtLeast(0)*54f
                 val noteY=maxOf(cy+140,lastMaterialY+68f)
                 add(GraphNode(obj.id,obj.name,280f,cy,kind="object"))
-                add(GraphNode("${obj.id}:tasks","任务",180f,cy-15,obj.id,"branch"))
-                add(GraphNode("${obj.id}:materials","材料",375f,cy-15,obj.id,"branch"))
-                add(GraphNode("${obj.id}:notes","说明",375f,noteY-65,obj.id,"branch"))
-                tasks.forEachIndexed {i,t->add(GraphNode(t.id,t.name,70f,cy-130+i*55f,"${obj.id}:tasks"))}
-                obj.materials.forEachIndexed {i,m->add(GraphNode(m.id,m.displayTitle,480f,cy-130+i*54f,"${obj.id}:materials","file"))}
-                obj.notes.forEachIndexed {i,n->add(GraphNode(n.id,n.title,480f,noteY+i*54f,"${obj.id}:notes","note"))}
+                // Leave room for the connectors instead of hiding them under adjacent boxes.
+                add(GraphNode("${obj.id}:tasks",tr("任务"),if(english) 140f else 160f,cy-15,obj.id,"branch"))
+                add(GraphNode("${obj.id}:materials",tr("材料"),if(english) 415f else 395f,cy-15,obj.id,"branch"))
+                add(GraphNode("${obj.id}:notes",tr("说明"),if(english) 415f else 395f,noteY-65,obj.id,"branch"))
+                tasks.forEachIndexed {i,t->add(GraphNode(t.id,t.name,if(english) 20f else 50f,cy-130+i*55f,"${obj.id}:tasks"))}
+                obj.materials.forEachIndexed {i,m->add(GraphNode(m.id,m.displayTitle,if(english) 540f else 500f,cy-130+i*54f,"${obj.id}:materials","file"))}
+                obj.notes.forEachIndexed {i,n->add(GraphNode(n.id,n.title,if(english) 540f else 500f,noteY+i*54f,"${obj.id}:notes","note"))}
                 val bottom=maxOf(cy+75,cy-130+tasks.lastIndex.coerceAtLeast(0)*55f,
                     if(obj.notes.isEmpty()) noteY-65 else noteY+obj.notes.lastIndex*54f)
                 groupY=cy+maxOf(330f,bottom-cy+190f)
@@ -128,7 +131,6 @@ private fun RelationshipGraph(data:AgendaSnapshot,onTask:(String)->Unit,onInfo:(
             if(focusObject==null) {lastFocus=null;return@LaunchedEffect}
             if(lastFocus==focusObject) return@LaunchedEffect
             val node=allNodes.find {it.id==focusObject} ?: return@LaunchedEffect
-            selectedNode=focusObject
             lastFocus=focusObject
             collapsed=collapsed-node.id
             zoom=maxOf(zoom,.85f)
@@ -181,11 +183,14 @@ private fun RelationshipGraph(data:AgendaSnapshot,onTask:(String)->Unit,onInfo:(
                 transformOrigin=TransformOrigin(0f,0f);scaleX=zoom;scaleY=zoom;translationX=pan.x;translationY=pan.y
             }) {
                 Canvas(Modifier.matchParentSize()) {
+                    // All branches share the main connector style at every zoom level.
+                    val connectorWidth=2f*density/zoom.coerceIn(.2f,1f)
                     nodes.forEach {n->
                         val parent=nodes.find {it.id==n.parent} ?: return@forEach
-                        val active=n.id==selectedNode || parent.id==selectedNode
-                        drawLine(if(active) Ink.Teal else Ink.Connection,Offset(parent.x*density,parent.y*density),
-                            Offset(n.x*density,n.y*density),(if(active) 2f else 1.5f)*density)
+                        drawLine(Meadow.GraphConnector,
+                            Offset(parent.x*density,parent.y*density),Offset(n.x*density,n.y*density),
+                            connectorWidth,
+                            cap=StrokeCap.Round)
                     }
                 }
                 nodes.forEach {node->
@@ -195,12 +200,10 @@ private fun RelationshipGraph(data:AgendaSnapshot,onTask:(String)->Unit,onInfo:(
                         .shadow(if(node.kind=="task" || node.kind=="file") 2.dp else 0.dp,
                             RoundedCornerShape(if(node.kind=="object") 24.dp else 10.dp),ambientColor=Ink.Text.copy(alpha=.08f),spotColor=Ink.Text.copy(alpha=.08f))
                         .clip(RoundedCornerShape(if(node.kind=="object") 24.dp else 10.dp))
-                        .background(if(node.kind=="object") Ink.ObjectFill else Ink.Surface)
+                        .background(if(node.kind=="object") Meadow.ObjectFill else Color.White)
                         .then(if(node.kind=="task" || node.kind=="file" || node.kind=="note")
-                            Modifier.border(1.dp,Ink.CardBorder,RoundedCornerShape(10.dp)) else Modifier)
-                        .semantics {selected=node.id==selectedNode}
+                            Modifier.border(1.dp,Ink.Divider.copy(alpha=.75f),RoundedCornerShape(10.dp)) else Modifier)
                         .clickable {
-                            selectedNode=node.id
                             when(node.kind) {
                                 "object" -> collapsed=if(node.id in collapsed) collapsed-node.id else collapsed+node.id
                                 "branch" -> when {
@@ -213,9 +216,17 @@ private fun RelationshipGraph(data:AgendaSnapshot,onTask:(String)->Unit,onInfo:(
                                 else -> onInfo(if(node.kind=="file") "material:${node.id}" else node.text)
                             }
                         }.padding(8.dp),contentAlignment=Alignment.Center) {
-                        AgendaText(node.text,title=node.kind=="object",size=if(node.kind=="object") 18 else 14,
-                            color=if(completed || node.kind=="branch") Ink.Muted else Ink.Text,maxLines=2,
-                            decoration=if(completed) TextDecoration.LineThrough else null)
+                        Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+                            // Only the three object branches get icons; task nodes remain text-only.
+                            if(node.kind=="branch") AgendaIcon(when {
+                                node.id.endsWith(":materials")->Mark.LAYERS
+                                node.id.endsWith(":notes")->Mark.INFO
+                                else->Mark.TASKS
+                            },color=Meadow.ObjectFill,modifier=Modifier.size(14.dp))
+                            AgendaText(node.text,title=node.kind=="object",size=if(node.kind=="object") 18 else 14,
+                                color=when {node.kind=="object"->Color.White;completed->Ink.Muted;else->Meadow.Text},maxLines=2,
+                                decoration=if(completed) TextDecoration.LineThrough else null)
+                        }
                     }
                 }
             }
@@ -227,6 +238,6 @@ private fun RelationshipGraph(data:AgendaSnapshot,onTask:(String)->Unit,onInfo:(
                 layout(constraints.maxWidth,constraints.maxHeight) {world.place(0,0)}
             }
         }
-        MarkButton(Mark.OVERVIEW,"全局概览",{overview()},modifier=Modifier.align(Alignment.BottomStart).padding(16.dp))
+        MarkButton(Mark.OVERVIEW,tr("全局概览"),{overview()},modifier=Modifier.align(Alignment.BottomStart).padding(16.dp))
     }
 }

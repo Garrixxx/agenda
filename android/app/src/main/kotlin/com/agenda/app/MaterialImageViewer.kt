@@ -51,11 +51,11 @@ internal fun MaterialImageViewer(item:AgendaMaterial?,repository:AgendaViewModel
         catch(e:Exception) {failed=true}
     }
     Column(Modifier.fillMaxSize().background(Ink.Canvas).statusBarsPadding().navigationBarsPadding()
-        .semantics {paneTitle="应用内图片查看"}) {
+        .semantics {paneTitle=tr("应用内图片查看")}) {
         Row(Modifier.fillMaxWidth().padding(horizontal=12.dp).heightIn(min=56.dp),verticalAlignment=Alignment.CenterVertically) {
-            AgendaText(item?.displayTitle ?: "图片",size=16,color=Ink.Primary,maxLines=2,modifier=Modifier.weight(1f))
-            TextButton({reset()},enabled=bitmap!=null) {AgendaText("复位",size=13,color=Ink.Primary)}
-            MarkButton(Mark.CLOSE,"关闭图片",onClose)
+            AgendaText(item?.displayTitle ?: tr("图片"),size=16,color=Ink.Primary,maxLines=2,modifier=Modifier.weight(1f))
+            TextButton({reset()},enabled=bitmap!=null) {AgendaText(tr("复位"),size=13,color=Ink.Primary)}
+            MarkButton(Mark.CLOSE,tr("关闭图片"),onClose)
         }
         Box(Modifier.weight(1f).fillMaxWidth().clipToBounds().onSizeChanged {viewport=it;reset()}
             .pointerInput(bitmap,viewport) {
@@ -71,18 +71,18 @@ internal fun MaterialImageViewer(item:AgendaMaterial?,repository:AgendaViewModel
                     else {zoom=2.5f;pan=bounded((Offset(viewport.width/2f,viewport.height/2f)-point)*(zoom-1f),zoom)}
                 })
             }.semantics {
-                contentDescription="图片预览，双指缩放，双击放大或复位，缩放 ${(zoom*100).toInt()}%"
+                contentDescription=tr("图片预览，双指缩放，双击放大或复位，缩放 {0}%",(zoom*100).toInt())
             },contentAlignment=Alignment.Center) {
             val loaded=bitmap
             if(loaded!=null) Image(loaded,contentDescription=item?.displayTitle,contentScale=ContentScale.Fit,
                 modifier=Modifier.fillMaxSize().graphicsLayer {scaleX=zoom;scaleY=zoom;translationX=pan.x;translationY=pan.y})
             else if(failed) Column(Modifier.padding(24.dp),horizontalAlignment=Alignment.CenterHorizontally) {
-                AgendaText("图片暂时无法显示",size=16,color=Ink.Primary)
-                AgendaText("文件可能损坏或格式暂不支持，可以重试。",size=13,color=Ink.Muted,modifier=Modifier.padding(top=8.dp))
-                TextButton({retry++}) {AgendaText("重试",color=Ink.Primary)}
+                AgendaText(tr("图片暂时无法显示"),size=16,color=Ink.Primary)
+                AgendaText(tr("文件可能损坏或格式暂不支持，可以重试。"),size=13,color=Ink.Muted,modifier=Modifier.padding(top=8.dp))
+                TextButton({retry++}) {AgendaText(tr("重试"),color=Ink.Primary)}
             } else CircularProgressIndicator(color=Ink.Primary)
         }
-        AgendaText("双指缩放 · 双击放大 · 放大后拖动",size=12,color=Ink.Muted,
+        AgendaText(tr("双指缩放 · 双击放大 · 放大后拖动"),size=12,color=Ink.Muted,
             modifier=Modifier.align(Alignment.CenterHorizontally).padding(12.dp))
     }
 }

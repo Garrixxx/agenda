@@ -24,23 +24,23 @@ internal fun TaskDetailsPanel(task:Task,data:AgendaSnapshot,repository:AgendaVie
     val scope=rememberCoroutineScope()
     val available=data.objects.flatMap {it.materials}.map {it.id}.toSet()
     LaunchedEffect(available) {
-        if(selected.any {it !in available}) {selected=selected.filter {it in available};error="有材料已删除，已移除对应选择，请核对后保存"}
+        if(selected.any {it !in available}) {selected=selected.filter {it in available};error=tr("有材料已删除，已移除对应选择，请核对后保存")}
     }
     SideEffect {onDirty(description!=task.description || selected.toSet()!=task.materialIds.toSet());onBusy(saving)}
     AgendaText(task.name,size=16,color=Ink.Primary,modifier=Modifier.padding(vertical=12.dp))
-    OutlinedTextField(description,{description=it;error=null},label={AgendaText("任务说明（可选）",size=12)},
-        modifier=Modifier.fillMaxWidth().semantics {contentDescription="任务说明"},enabled=!saving,
+    AgendaOutlinedTextField(description,{description=it;error=null},label={AgendaText(tr("任务说明（可选）"),size=12)},
+        modifier=Modifier.fillMaxWidth().semantics {contentDescription=tr("任务说明")},enabled=!saving,
         minLines=3,maxLines=8,shape=RoundedCornerShape(14.dp))
-    AgendaText("关联已有材料",size=14,color=Ink.Primary,modifier=Modifier.padding(top=20.dp,bottom=8.dp))
-    AgendaText("可以选择任意对象已保存的材料；关联共用一份副本，移动任务后继续保留。",size=12,color=Ink.Muted)
-    if(available.isEmpty()) AgendaText("还没有材料，请先在对象的材料分支添加。",size=13,color=Ink.Muted,modifier=Modifier.padding(vertical=16.dp))
+    AgendaText(tr("关联已有材料"),size=14,color=Ink.Primary,modifier=Modifier.padding(top=20.dp,bottom=8.dp))
+    AgendaText(tr("可以选择任意对象已保存的材料；关联共用一份副本，移动任务后继续保留。"),size=12,color=Ink.Muted)
+    if(available.isEmpty()) AgendaText(tr("还没有材料，请先在对象的材料分支添加。"),size=13,color=Ink.Muted,modifier=Modifier.padding(vertical=16.dp))
     else Column(Modifier.fillMaxWidth().heightIn(max=260.dp).verticalScroll(rememberScrollState())) {
         data.objects.filter {it.materials.isNotEmpty()}.forEach {obj->
             AgendaText(obj.name,size=12,color=Ink.Muted,modifier=Modifier.padding(top=12.dp))
             obj.materials.forEach {item->
                 fun toggle(checked:Boolean) {selected=if(checked) (selected+item.id).distinct() else selected-item.id;error=null}
                 Row(Modifier.fillMaxWidth().clickable(enabled=!saving) {toggle(item.id !in selected)}
-                    .semantics {contentDescription="关联材料：${item.displayTitle}";this.selected=item.id in selected},verticalAlignment=Alignment.CenterVertically) {
+                    .semantics {contentDescription=tr("关联材料：{0}",item.displayTitle);this.selected=item.id in selected},verticalAlignment=Alignment.CenterVertically) {
                     Checkbox(item.id in selected,{toggle(it)},enabled=!saving,colors=CheckboxDefaults.colors(checkedColor=Ink.Primary))
                     AgendaText(item.displayTitle,size=14,modifier=Modifier.weight(1f).padding(vertical=8.dp))
                 }
@@ -54,6 +54,6 @@ internal fun TaskDetailsPanel(task:Task,data:AgendaSnapshot,repository:AgendaVie
         catch(e:Exception) {error=saveError(e)}
         finally {saving=false}
     }},enabled=!saving,shape=RoundedCornerShape(11.dp),modifier=Modifier.padding(top=16.dp)) {
-        AgendaText(if(saving) "保存中…" else "保存说明与关联",color=Ink.Surface)
+        AgendaText(if(saving) tr("保存中…") else tr("保存说明与关联"),color=Ink.Surface)
     }
 }
