@@ -7,11 +7,12 @@ android {
     namespace = "com.agenda.app"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.agenda.local"
+        applicationId = if(providers.gradleProperty("agendaPreview").orNull=="true") "com.agenda.local.preview" else "com.agenda.local"
+        manifestPlaceholders["appLabel"] = if(providers.gradleProperty("agendaPreview").orNull=="true") "Agenda · 新版预览" else "Agenda"
         minSdk = 31
         targetSdk = 36
-        versionCode = 14
-        versionName = "0.11.0-local"
+        versionCode = 24
+        versionName = "0.14.4-uniform-connectors"
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {
@@ -24,6 +25,7 @@ android {
 }
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 dependencies {
+    testImplementation(libs.junit)
     implementation(project(":domain"))
     implementation(project(":data"))
     implementation(platform(libs.compose.bom))

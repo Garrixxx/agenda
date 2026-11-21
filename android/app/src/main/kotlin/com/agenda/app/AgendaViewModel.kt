@@ -1,5 +1,7 @@
 package com.agenda.app
 
+import com.agenda.app.design.tr
+
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,15 +13,15 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 fun saveError(error:Throwable):String=when(error) {
-    is AgendaFailure.DuplicateSchedule->"这条任务已安排在同一日期、时段和时间，请调整后重试"
-    is AgendaFailure.NotFound->"这项内容已不存在，请重新选择"
-    is AgendaFailure.InvalidInput,is IllegalArgumentException->"请检查填写的内容"
-    is AgendaFailure.FileUnavailable->"材料副本暂时无法读取，请检查文件后重试"
-    is AgendaFailure.UndoExpired->"撤销时间已结束"
-    is AgendaFailure.UndoConflict->"关联内容已变化，暂时无法撤销；可先撤销相关删除后重试"
-    is AgendaFailure.WorkspaceChanged->"数据集已切换，请重新打开应用"
-    is AgendaFailure.DeleteChanged->"内容已变化，请重新核对删除范围"
-    else->"保存失败，内容已保留，请重试"
+    is AgendaFailure.DuplicateSchedule->tr("这条任务已安排在同一日期、时段和时间，请调整后重试")
+    is AgendaFailure.NotFound->tr("这项内容已不存在，请重新选择")
+    is AgendaFailure.InvalidInput,is IllegalArgumentException->tr("请检查填写的内容")
+    is AgendaFailure.FileUnavailable->tr("材料副本暂时无法读取，请检查文件后重试")
+    is AgendaFailure.UndoExpired->tr("撤销时间已结束")
+    is AgendaFailure.UndoConflict->tr("关联内容已变化，暂时无法撤销；可先撤销相关删除后重试")
+    is AgendaFailure.WorkspaceChanged->tr("数据集已切换，请重新打开应用")
+    is AgendaFailure.DeleteChanged->tr("内容已变化，请重新核对删除范围")
+    else->tr("保存失败，内容已保留，请重试")
 }
 
 class AgendaViewModel(private val repository:AgendaRepository,private val preferencesRepository:PreferencesRepository,
@@ -85,7 +87,7 @@ class AgendaViewModel(private val repository:AgendaRepository,private val prefer
                     data.value=s;prefs.value=p;pending.value=d;loaded.value=true
                 }
             } catch(c:CancellationException) {throw c}
-            catch(e:Exception) {failure.value="暂时无法读取本机数据，请重试";loaded.value=false}
+            catch(e:Exception) {failure.value=tr("暂时无法读取本机数据，请重试");loaded.value=false}
         }
     }
     private fun command(action:suspend ()->Unit) {viewModelScope.launch {
@@ -127,7 +129,7 @@ class AgendaViewModel(private val repository:AgendaRepository,private val prefer
                 if(e !is AgendaFailure.WorkspaceChanged) {
                     val ids=reminderTasks(data.value.tasks,today).map {it.id}
                     if(ids.isNotEmpty()) reminderState.value=today to ids
-                    messages.emit("今日提醒记录暂未保存，本次使用仍只提醒一次")
+                    messages.emit(tr("今日提醒记录暂未保存，本次使用仍只提醒一次"))
                 }
             }
         }
@@ -151,7 +153,7 @@ class AgendaViewModel(private val repository:AgendaRepository,private val prefer
     fun exportBackup(uri:Uri,snapshotId:String?=null)=backupAction {
         if(snapshotId==null) backupStore.export(uri) {progress.value=it}
         else backupStore.exportSnapshot(snapshotId,uri) {progress.value=it}
-        backupNotice.value="备份已导出"
+        backupNotice.value=tr("备份已导出")
     }
     fun prepareBackup(uri:Uri)=backupAction {
         prepared.value?.let {backupStore.discard(it)};prepared.value=null
@@ -185,21 +187,21 @@ class AgendaViewModel(private val repository:AgendaRepository,private val prefer
     suspend fun savePreferences(preferences:UserPreferences) {
         try {preferencesRepository.save(preferences)}
         catch(c:CancellationException) {throw c}
-        catch(e:Exception) {messages.emit("视图设置未保存，请稍后重试")}
+        catch(e:Exception) {messages.emit(tr("视图设置未保存，请稍后重试"))}
     }
 }
 
 private fun backupErrorMessage(error:Throwable):String=when(error) {
     is BackupException->when(error.problem) {
-        BackupProblem.INVALID->"备份损坏、内容不完整或校验失败，当前数据未改变"
-        BackupProblem.UNSUPPORTED->"暂不支持这个备份版本，当前数据未改变"
-        BackupProblem.LIMIT->"备份超过本版大小或条目上限：附件合计 2GB、元数据 8MB、记录 10 万条"
-        BackupProblem.NO_SPACE->"本机空间不足，请释放空间后重试"
-        BackupProblem.PENDING_UNDO->"还有可撤销的删除，请先撤销或等待提示结束后重试"
-        BackupProblem.STALE->"这份备份的暂存已失效，请重新选择"
-        BackupProblem.SNAPSHOT_FAILED->"恢复前快照未能保存，恢复已停止，当前数据保留"
-        BackupProblem.SWITCH_FAILED->"数据切换未完成，原数据集与恢复前快照已保留，请重新打开应用"
+        BackupProblem.INVALID->tr("备份损坏、内容不完整或校验失败，当前数据未改变")
+        BackupProblem.UNSUPPORTED->tr("暂不支持这个备份版本，当前数据未改变")
+        BackupProblem.LIMIT->tr("备份超过本版大小或条目上限：附件合计 2GB、元数据 8MB、记录 10 万条")
+        BackupProblem.NO_SPACE->tr("本机空间不足，请释放空间后重试")
+        BackupProblem.PENDING_UNDO->tr("还有可撤销的删除，请先撤销或等待提示结束后重试")
+        BackupProblem.STALE->tr("这份备份的暂存已失效，请重新选择")
+        BackupProblem.SNAPSHOT_FAILED->tr("恢复前快照未能保存，恢复已停止，当前数据保留")
+        BackupProblem.SWITCH_FAILED->tr("数据切换未完成，原数据集与恢复前快照已保留，请重新打开应用")
     }
-    is AgendaFailure.FileUnavailable->"材料副本无法读取或校验不一致，操作未完成"
-    else->"操作未完成，请检查文件权限和可用空间后重试"
+    is AgendaFailure.FileUnavailable->tr("材料副本无法读取或校验不一致，操作未完成")
+    else->tr("操作未完成，请检查文件权限和可用空间后重试")
 }

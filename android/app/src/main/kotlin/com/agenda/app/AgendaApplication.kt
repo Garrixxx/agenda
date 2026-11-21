@@ -22,6 +22,10 @@ private class DatasetServices(context:Context,manager:WorkspaceManager,val locat
 }
 
 class AgendaApplication:Application() {
+    override fun onCreate() {
+        super.onCreate()
+        com.agenda.app.design.InterfaceSettings.initialize(this)
+    }
     private val manager by lazy {WorkspaceManager(this).also {it.resolve();it.cleanStartupStaging()}}
     private var active:DatasetServices?=null
     @Synchronized private fun services():DatasetServices {

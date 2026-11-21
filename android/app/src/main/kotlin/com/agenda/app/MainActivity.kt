@@ -17,6 +17,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Keep the three-button system bar transparent so the page colour reaches the bottom edge.
+        window.isNavigationBarContrastEnforced=false
         val app=application as AgendaApplication
         val model=ViewModelProvider(this,object:ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")

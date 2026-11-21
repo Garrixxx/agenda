@@ -23,17 +23,17 @@ internal fun MaterialDetails(item:AgendaMaterial,repository:AgendaViewModel,init
     var error by rememberSaveable(item.id) {mutableStateOf<String?>(null)}
     val scope=rememberCoroutineScope()
     SideEffect {onDirty(editing && (title!=item.title || description!=item.description));onSaving(saving)}
-    AgendaText("原文件：${item.name}",size=12,color=Ink.Muted,modifier=Modifier.padding(top=12.dp))
-    AgendaText("${item.sizeBytes} 字节",size=12,color=Ink.Muted,modifier=Modifier.padding(top=4.dp,bottom=16.dp))
+    AgendaText(tr("原文件：{0}",item.name),size=12,color=Ink.Muted,modifier=Modifier.padding(top=12.dp))
+    AgendaText(tr("{0} 字节",item.sizeBytes),size=12,color=Ink.Muted,modifier=Modifier.padding(top=4.dp,bottom=16.dp))
     if(editing) {
-        OutlinedTextField(title,{title=it;error=null},label={AgendaText("显示标题（可选）",size=12)},
-            placeholder={AgendaText("留空使用原文件名",size=13,color=Ink.Muted)},
-            modifier=Modifier.fillMaxWidth().semantics {contentDescription="材料显示标题"},
+        AgendaOutlinedTextField(title,{title=it;error=null},label={AgendaText(tr("显示标题（可选）"),size=12)},
+            placeholder={AgendaText(tr("留空使用原文件名"),size=13,color=Ink.Muted)},
+            modifier=Modifier.fillMaxWidth().semantics {contentDescription=tr("材料显示标题")},
             enabled=!saving,shape=RoundedCornerShape(14.dp),singleLine=true)
         Spacer(Modifier.height(14.dp))
-        OutlinedTextField(description,{description=it;error=null},label={AgendaText("文字说明（可选）",size=12)},
-            placeholder={AgendaText("记下这份材料的内容或用途…",size=13,color=Ink.Muted)},
-            modifier=Modifier.fillMaxWidth().semantics {contentDescription="材料文字说明"},
+        AgendaOutlinedTextField(description,{description=it;error=null},label={AgendaText(tr("文字说明（可选）"),size=12)},
+            placeholder={AgendaText(tr("记下这份材料的内容或用途…"),size=13,color=Ink.Muted)},
+            modifier=Modifier.fillMaxWidth().semantics {contentDescription=tr("材料文字说明")},
             enabled=!saving,shape=RoundedCornerShape(14.dp),minLines=3,maxLines=8)
         Button({
             val savedTitle=title;val savedDescription=description;saving=true;error=null
@@ -44,16 +44,16 @@ internal fun MaterialDetails(item:AgendaMaterial,repository:AgendaViewModel,init
                 finally {saving=false}
             }
         },enabled=!saving,shape=RoundedCornerShape(11.dp),modifier=Modifier.padding(top=16.dp)) {
-            AgendaText(if(saving) "保存中…" else "保存材料信息",color=Ink.Surface)
+            AgendaText(if(saving) tr("保存中…") else tr("保存材料信息"),color=Ink.Surface)
         }
     } else {
         if(item.description.isNotBlank()) AgendaText(item.description,size=14,modifier=Modifier.padding(bottom=16.dp))
-        else AgendaText("还没有文字说明",size=13,color=Ink.Muted,modifier=Modifier.padding(bottom=12.dp))
-        Button(onOpen,shape=RoundedCornerShape(11.dp)) {AgendaText(if(item.isImage) "查看图片" else "打开材料",color=Ink.Surface)}
+        else AgendaText(tr("还没有文字说明"),size=13,color=Ink.Muted,modifier=Modifier.padding(bottom=12.dp))
+        Button(onOpen,shape=RoundedCornerShape(11.dp)) {AgendaText(if(item.isImage) tr("查看图片") else tr("打开材料"),color=Ink.Surface)}
         TextButton({title=item.title;description=item.description;editing=true},modifier=Modifier.padding(top=4.dp)) {
-            AgendaText("编辑标题与说明",size=13,color=Ink.Primary)
+            AgendaText(tr("编辑标题与说明"),size=13,color=Ink.Primary)
         }
-        TextButton(onDelete) {AgendaText("删除材料",size=13,color=Ink.Danger)}
+        TextButton(onDelete) {AgendaText(tr("删除材料"),size=13,color=Ink.Danger)}
     }
     error?.let {AgendaText(it,size=12,color=Ink.Danger,modifier=Modifier.padding(top=10.dp).semantics {liveRegion=LiveRegionMode.Polite})}
 }

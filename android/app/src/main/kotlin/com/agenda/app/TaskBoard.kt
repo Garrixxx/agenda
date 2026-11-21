@@ -39,7 +39,7 @@ fun TaskBoard(data:AgendaSnapshot,repository:AgendaViewModel,onTask:(String)->Un
     val density=LocalDensity.current.density
     BackHandler(expanded!=null) {expanded=null}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
-        AgendaText("事项",title=true,size=20,color=Ink.Primary)
+        AgendaText(tr("事项"),title=true,size=20,color=Ink.Primary)
         var previousRow=-1
         positions.groupBy {it.row}.toSortedMap().forEach {(rowIndex,cards)->
             var gaps=rowIndex-previousRow-1
@@ -47,12 +47,7 @@ fun TaskBoard(data:AgendaSnapshot,repository:AgendaViewModel,onTask:(String)->Un
             previousRow=rowIndex
             val row=listOf(cards.find {it.column==0}?.cardId.orEmpty(),cards.find {it.column==1}?.cardId.orEmpty())
             ExpandablePair(row,expanded,{expanded=if(expanded==it) null else it},
-                label={id->"事项卡片："+(data.objects.find {it.id==id}?.name ?: data.tasks.find {it.id==id}?.name.orEmpty())},
-                progress={id->
-                    val tasks=if(data.objects.any {it.id==id}) data.tasks.filter {it.objectId==id}
-                        else data.tasks.filter {it.id==id}
-                    if(tasks.isEmpty()) 0f else tasks.count {it.completed}.toFloat()/tasks.size
-                },
+                label={id->tr("事项卡片：")+(data.objects.find {it.id==id}?.name ?: data.tasks.find {it.id==id}?.name.orEmpty())},
                 cardModifier={id->Modifier.zIndex(if(dragged==id) 1f else 0f).graphicsLayer {
                     if(dragged==id) {translationX=delta.x;translationY=delta.y;scaleX=1.025f;scaleY=1.025f}
                 }.pointerInput(id,positions) {
@@ -74,13 +69,13 @@ fun TaskBoard(data:AgendaSnapshot,repository:AgendaViewModel,onTask:(String)->Un
                     AgendaText(obj?.name ?: task?.name.orEmpty(),title=obj!=null,size=if(obj!=null) 18 else 14,
                         color=if(obj!=null) Ink.Primary else Ink.Text,maxLines=3)
                     Spacer(Modifier.height(10.dp))
-                    AgendaText(if(obj!=null) "${data.tasks.count {it.objectId==id && !it.completed}} 项待做" else task?.effort?.label ?: "未分类",size=12,color=Ink.Muted)
+                    AgendaText(if(obj!=null) tr("{0} 项待做",data.tasks.count {it.objectId==id && !it.completed}) else task?.effort?.label?.let {tr(it)} ?: tr("未分类"),size=12,color=Ink.Muted)
                 },body={id,interactive->
                     val obj=data.objects.find {it.id==id}
                     if(obj!=null) {
                         Column {
-                            TextButton({onInfo("edit-object:${obj.id}")},enabled=interactive) {AgendaText("编辑对象",size=12,color=Ink.Primary)}
-                            TextButton({onInfo("delete:object:${obj.id}")},enabled=interactive) {AgendaText("删除对象",size=12,color=Ink.Danger)}
+                            TextButton({onInfo("edit-object:${obj.id}")},enabled=interactive) {AgendaText(tr("编辑对象"),size=12,color=Ink.Primary)}
+                            TextButton({onInfo("delete:object:${obj.id}")},enabled=interactive) {AgendaText(tr("删除对象"),size=12,color=Ink.Danger)}
                             data.tasks.filter {it.objectId==id}.forEach {TaskLine(it,repository,onTask,enabled=interactive)}
                             obj.materials.forEach {file->AgendaText(file.displayTitle,size=13,
                                 modifier=Modifier.fillMaxWidth().then(if(interactive) Modifier.clickable {onInfo("material:${file.id}")} else Modifier).padding(vertical=12.dp))}
@@ -90,7 +85,7 @@ fun TaskBoard(data:AgendaSnapshot,repository:AgendaViewModel,onTask:(String)->Un
                     } else data.tasks.find {it.id==id}?.let {TaskLine(it,repository,onTask,date=true,enabled=interactive)}
                 })
         }
-        AgendaText("轻点展开 · 长按移动 · 上下滑动",size=12,color=Ink.Muted,modifier=Modifier.padding(top=8.dp,bottom=50.dp))
+        AgendaText(tr("轻点展开 · 长按移动 · 上下滑动"),size=12,color=Ink.Muted,modifier=Modifier.padding(top=8.dp,bottom=50.dp))
     }
 }
 
